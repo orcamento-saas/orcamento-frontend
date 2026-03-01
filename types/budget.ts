@@ -1,5 +1,11 @@
 export type BudgetStatus = "DRAFT" | "SENT" | "SIGNED";
 
+export interface BudgetItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 export interface Budget {
   id: string;
   userId: string;
@@ -11,6 +17,23 @@ export interface Budget {
   pdfUrl: string | null;
   signedPdfUrl: string | null;
   createdAt: string;
+  companyLogoUrl?: string | null;
+  companyName?: string | null;
+  companyAddress?: string | null;
+  companyPhone?: string | null;
+  companyCnpj?: string | null;
+  clientName?: string | null;
+  clientEmail?: string | null;
+  clientPhone?: string | null;
+  clientAddress?: string | null;
+  validityDate?: string | null;
+  validityDays?: number | null;
+  observation?: string | null;
+  items?: BudgetItem[] | null;
+  fontColor?: string | null;
+  backgroundColor?: string | null;
+  gridColor?: string | null;
+  layoutId?: string | null;
 }
 
 export interface PublicBudgetView {
@@ -23,6 +46,10 @@ export interface PublicBudgetView {
   pdfUrl: string | null;
   signedPdfUrl: string | null;
   createdAt: string;
+  fontColor?: string | null;
+  backgroundColor?: string | null;
+  gridColor?: string | null;
+  layoutId?: string | null;
 }
 
 export interface CreateBudgetBody {
@@ -30,6 +57,24 @@ export interface CreateBudgetBody {
   description?: string;
   templateType: string;
   value: number;
+  companyLogoUrl?: string;
+  companyName?: string;
+  companyAddress?: string;
+  companyPhone?: string;
+  companyCnpj?: string;
+  clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  documentDate?: string;
+  validityDays?: number;
+  validityDate?: string;
+  observation?: string;
+  items?: BudgetItem[];
+  fontColor?: string;
+  backgroundColor?: string;
+  gridColor?: string;
+  layoutId?: string;
 }
 
 export interface SignBudgetBody {

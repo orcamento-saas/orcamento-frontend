@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Orçamento SaaS",
+  title: "Orçamento",
   description: "Geração de orçamentos",
 };
 
@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${inter.variable} ${inter.className} font-sans antialiased`}>
+      <body className={`${inter.variable} ${inter.className} overflow-x-hidden font-sans antialiased`}>
         {children}
       </body>
     </html>

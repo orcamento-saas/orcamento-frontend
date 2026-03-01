@@ -19,6 +19,7 @@ const statusConfig: Record<
 };
 
 export function StatusBadge({ status }: { status: BudgetStatus }) {
+  if (status === "SENT") return null;
   const { label, className } = statusConfig[status];
   return (
     <span

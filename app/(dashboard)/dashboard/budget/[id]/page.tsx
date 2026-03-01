@@ -15,7 +15,19 @@ import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { ShareBudget } from "@/components/ShareBudget";
+import { BudgetPdfPreview } from "@/components/BudgetPdfPreview";
 import type { ApiError } from "@/lib/api";
+
+/** Data do orçamento em YYYY-MM-DD a partir de createdAt. */
+function toDocumentDate(createdAt: string): string {
+  if (!createdAt) return "";
+  const d = new Date(createdAt);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -95,88 +107,87 @@ export default function DashboardBudgetPage() {
     );
   }
 
+  const documentDate = toDocumentDate(budget.createdAt);
+  const validityDays = budget.validityDays ?? 0;
+
   return (
-    <div>
-      <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
-        <Link href="/dashboard" className="hover:text-zinc-700">
-          Dashboard
-        </Link>
-        <span>/</span>
-        <span className="text-zinc-900">{budget.title}</span>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2 text-sm text-zinc-500">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/dashboard" className="hover:text-zinc-700">
+            Dashboard
+          </Link>
+          <span>/</span>
+          <span className="text-zinc-900">{budget.title}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={budget.status} />
+          {budget.pdfUrl && (
+            <>
+              <a href={budget.pdfUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="secondary" size="sm">Ver PDF</Button>
+              </a>
+              <a href={budget.pdfUrl} download target="_blank" rel="noopener noreferrer">
+                <Button variant="secondary" size="sm">Baixar PDF</Button>
+              </a>
+            </>
+          )}
+          {budget.status === "DRAFT" && (
+            <Button size="sm" isLoading={generatingPdf} onClick={handleGeneratePdf}>
+              Gerar PDF
+            </Button>
+          )}
+          <Button variant="secondary" size="sm" onClick={() => setShareOpen(true)}>
+            Compartilhar
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-red-600 hover:bg-red-50"
+            onClick={() => setDeleteOpen(true)}
+          >
+            Excluir
+          </Button>
+        </div>
       </div>
 
-      <Card className="mb-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-zinc-900">{budget.title}</h1>
-            <div className="mt-2 flex items-center gap-2">
-              <StatusBadge status={budget.status} />
-            </div>
-            {budget.description && (
-              <p className="mt-3 text-zinc-600">{budget.description}</p>
-            )}
-            <p className="mt-4 text-2xl font-semibold text-zinc-900">
-              {formatCurrency(budget.value)}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {budget.pdfUrl && (
-              <>
-                <a
-                  href={budget.pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button variant="secondary" size="sm">
-                    Ver PDF
-                  </Button>
-                </a>
-                <a href={budget.pdfUrl} download>
-                  <Button variant="secondary" size="sm">
-                    Baixar PDF
-                  </Button>
-                </a>
-              </>
-            )}
-            {budget.status === "DRAFT" && (
-              <Button
-                size="sm"
-                isLoading={generatingPdf}
-                onClick={handleGeneratePdf}
-              >
-                Gerar PDF
-              </Button>
-            )}
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setShareOpen(true)}
-            >
-              Compartilhar
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-red-600 hover:bg-red-50"
-              onClick={() => setDeleteOpen(true)}
-            >
-              Excluir
-            </Button>
-          </div>
+      <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 p-4">
+        <BudgetPdfPreview
+          companyLogoUrl={budget.companyLogoUrl ?? ""}
+          companyName={budget.companyName ?? ""}
+          companyAddress={budget.companyAddress ?? ""}
+          companyPhone={budget.companyPhone ?? ""}
+          companyCnpj={budget.companyCnpj ?? ""}
+          documentDate={documentDate}
+          clientName={budget.clientName ?? ""}
+          clientEmail={budget.clientEmail ?? ""}
+          clientAddress={budget.clientAddress ?? ""}
+          title={budget.title}
+          items={budget.items ?? []}
+          total={budget.value}
+          validityDays={validityDays}
+          observation={budget.observation ?? ""}
+          fontColor={budget.fontColor ?? "#18181b"}
+          backgroundColor={budget.backgroundColor ?? "#ffffff"}
+          gridColor={budget.gridColor ?? "#000000"}
+          layoutId={budget.layoutId ?? "simples"}
+          minScale={1.35}
+          showLens={false}
+        />
+      </div>
+
+      {budget.signedPdfUrl && (
+        <div className="mt-3 shrink-0">
+          <a
+            href={budget.signedPdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+          >
+            Ver PDF assinado
+          </a>
         </div>
-        {budget.signedPdfUrl && (
-          <div className="mt-4 border-t border-zinc-100 pt-4">
-            <a
-              href={budget.signedPdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
-            >
-              Ver PDF assinado
-            </a>
-          </div>
-        )}
-      </Card>
+      )}
 
       <Modal
         isOpen={shareOpen}

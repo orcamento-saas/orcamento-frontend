@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media print {
+  .pdf-preview-viewport { max-height: none !important; }
+  .pdf-preview-content { transform: none !important; }
+}

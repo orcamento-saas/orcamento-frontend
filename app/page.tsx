@@ -21,7 +21,7 @@ export default function HomePage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-zinc-50 via-white to-primary-50/30 p-6">
       <div className="mx-auto max-w-md text-center">
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
-          Orçamento SaaS
+          Orçamento
         </h1>
         <p className="mt-2 text-zinc-600">
           Crie e compartilhe orçamentos de forma simples. Gere PDFs e colete
