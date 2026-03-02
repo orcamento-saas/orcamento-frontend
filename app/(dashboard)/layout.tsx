@@ -23,31 +23,41 @@ export default function DashboardLayout({
             collapsed ? "w-16" : "w-56"
           }`}
         >
-          <div className={`flex h-14 items-center border-b border-zinc-200 px-3 ${collapsed ? "justify-center" : "justify-between"}`}>
-            {!collapsed && (
-              <Link
-                href="/dashboard"
-                className="text-lg font-semibold tracking-tight text-zinc-900"
+          <div className={`flex h-14 items-center border-b border-zinc-200 px-3 ${collapsed ? "justify-center" : "flex justify-between"}`}>
+            {!collapsed ? (
+              <>
+                <div className="min-w-0 flex-1" />
+                <Link
+                  href="/dashboard"
+                  className="shrink-0 text-lg font-semibold tracking-tight text-zinc-900"
+                >
+                  Orçamento
+                </Link>
+                <div className="flex min-w-0 flex-1 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setCollapsed((c) => !c)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                    aria-label="Recolher menu"
+                  >
+                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="m15 18-6-6 6-6" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setCollapsed((c) => !c)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                aria-label="Expandir menu"
               >
-                Orçamento
-              </Link>
-            )}
-            <button
-              type="button"
-              onClick={() => setCollapsed((c) => !c)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
-              aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-            >
-              {collapsed ? (
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="m9 18 6-6-6-6" />
                 </svg>
-              ) : (
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="m15 18-6-6 6-6" />
-                </svg>
-              )}
-            </button>
+              </button>
+            )}
           </div>
           <nav className="flex flex-1 flex-col gap-1 p-3">
             <NavLink href="/dashboard" collapsed={collapsed} icon="dashboard">
