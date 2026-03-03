@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { getPublicBudget, signBudget } from "@/services/budgets";
 import type { PublicBudgetView } from "@/types/budget";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +16,14 @@ function formatCurrency(value: number): string {
     style: "currency",
     currency: "BRL",
   }).format(value);
+}
+
+function formatDateShort(iso: string): string {
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 export default function PublicBudgetPage() {
@@ -114,57 +121,58 @@ export default function PublicBudgetPage() {
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
         <Card className="mb-8">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-bold text-zinc-900">{budget.title}</h1>
             <StatusBadge status={budget.status} />
           </div>
-          {budget.description && (
-            <p className="mt-3 text-zinc-600">{budget.description}</p>
-          )}
-          <p className="mt-4 text-2xl font-semibold text-zinc-900">
-            {formatCurrency(budget.value)}
+          <p className="mt-3 font-semibold text-zinc-900">
+            {budget.clientName ?? "—"}
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {budget.pdfUrl && (
+          <p className="mt-1 text-lg font-medium text-zinc-800">
+            {budget.title}
+          </p>
+          <p className="mt-1 text-sm text-zinc-700">
+            Total {formatCurrency(budget.value)} - {formatDateShort(budget.createdAt)}
+          </p>
+          {!signed && budget.pdfUrl && (
+            <div className="mt-4">
               <a
                 href={budget.pdfUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-medium text-primary-600 hover:text-primary-700"
+                className="inline-block"
               >
-                Ver PDF
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800"
+                >
+                  Ver orçamento
+                </Button>
               </a>
-            )}
-            {budget.signedPdfUrl && (
+            </div>
+          )}
+          {budget.signedPdfUrl && (
+            <div className="mt-2">
               <a
                 href={budget.signedPdfUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                className="inline-block"
               >
-                Ver PDF assinado
+                <Button size="sm">
+                  Abrir PDF assinado
+                </Button>
               </a>
-            )}
-          </div>
+            </div>
+          )}
         </Card>
 
         {signed ? (
           <Card className="border-emerald-200 bg-emerald-50/50">
             <h2 className="text-lg font-semibold text-emerald-900">
-              Assinatura recebida
+              Assinatura enviada
             </h2>
             <p className="mt-2 text-emerald-800">
               O orçamento foi assinado com sucesso. Obrigado!
             </p>
-            {budget.signedPdfUrl && (
-              <a
-                href={budget.signedPdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-block"
-              >
-                <Button size="sm">Abrir PDF assinado</Button>
-              </a>
-            )}
           </Card>
         ) : (
           <Card>
@@ -217,10 +225,10 @@ export default function PublicBudgetPage() {
           </Card>
         )}
 
-        <p className="mt-8 text-center text-sm text-zinc-500">
-          <Link href="/" className="hover:text-zinc-700">
-            Voltar ao início
-          </Link>
+        <p className="mt-8 text-center">
+          <Button size="sm" onClick={() => window.close()}>
+            Fechar
+          </Button>
         </p>
       </div>
     </div>

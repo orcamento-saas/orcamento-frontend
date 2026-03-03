@@ -266,6 +266,11 @@ export default function CreateBudgetPage() {
       return;
     }
 
+    if (!clientName.trim()) {
+      setError("Informe o nome do cliente.");
+      return;
+    }
+
     if (clientEmail.trim() && !isValidEmail(clientEmail.trim())) {
       setError("E-mail do cliente inválido.");
       return;
@@ -286,7 +291,7 @@ export default function CreateBudgetPage() {
       companyAddress: companyAddress.trim() || undefined,
       companyPhone: companyPhone.trim() || undefined,
       companyCnpj: companyCnpj.trim() || undefined,
-      clientName: clientName.trim() || undefined,
+      clientName: clientName.trim(),
       clientEmail: clientEmail.trim() || undefined,
       clientPhone: clientPhone.trim() || undefined,
       clientAddress: clientAddress.trim() || undefined,
@@ -459,6 +464,7 @@ export default function CreateBudgetPage() {
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 placeholder="Nome do cliente"
+                required
               />
               <Input
                 label="E-mail"

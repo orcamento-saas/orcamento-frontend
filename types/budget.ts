@@ -46,6 +46,7 @@ export interface PublicBudgetView {
   pdfUrl: string | null;
   signedPdfUrl: string | null;
   createdAt: string;
+  clientName?: string | null;
   fontColor?: string | null;
   backgroundColor?: string | null;
   gridColor?: string | null;

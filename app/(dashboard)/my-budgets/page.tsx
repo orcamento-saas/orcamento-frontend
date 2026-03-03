@@ -18,10 +18,10 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function formatDate(iso: string): string {
+function formatDateShort(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR", {
     day: "2-digit",
-    month: "short",
+    month: "2-digit",
     year: "numeric",
   });
 }
@@ -172,12 +172,6 @@ export default function MyBudgetsPage() {
                   <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                          href={`/dashboard/budget/${b.id}`}
-                          className="font-semibold text-zinc-900 hover:text-primary-600"
-                        >
-                          {b.clientName ?? "—"}
-                        </Link>
                         <StatusBadge status={b.status} />
                         {!b.signedPdfUrl && (
                           <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
@@ -185,8 +179,14 @@ export default function MyBudgetsPage() {
                           </span>
                         )}
                       </div>
-                      <p className="mt-2 text-sm font-medium text-zinc-700">
-                        {formatCurrency(b.value)} · {formatDate(b.createdAt)}
+                      <p className="mt-1 font-semibold text-zinc-900">
+                        {b.clientName ?? "—"}
+                      </p>
+                      <p className="mt-1 text-sm text-zinc-600">
+                        {b.title ?? "—"}
+                      </p>
+                      <p className="mt-1 text-sm text-zinc-700">
+                        Total {formatCurrency(b.value)} - {formatDateShort(b.createdAt)}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
