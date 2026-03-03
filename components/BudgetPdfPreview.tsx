@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import type { BudgetItem } from "@/types/budget";
-import { getBudgetLayout } from "@/lib/budgetLayouts";
+import type { BudgetLayoutConfig } from "@/lib/budgetLayouts";
 
 /** A4 em pixels (96 DPI): 210mm × 297mm */
 const A4_WIDTH_PX = 210 * (96 / 25.4);
@@ -16,6 +16,7 @@ interface BudgetPdfPreviewProps {
   companyCnpj: string;
   documentDate: string;
   clientName: string;
+  clientPhone: string;
   clientEmail: string;
   clientAddress: string;
   title: string;
@@ -33,8 +34,10 @@ interface BudgetPdfPreviewProps {
   minScale?: number;
   /** Exibir lupa ao passar o mouse (default: true) */
   showLens?: boolean;
-  /** ID do layout (simples, moderno, profissional) - usa config de lib/budgetLayouts */
-  layoutId?: string | null;
+  /** ID do template/layout (simples, moderno, profissional) - apenas informativo */
+  templateId?: string | null;
+  /** Configuração completa do layout, vinda do backend */
+  layout: BudgetLayoutConfig;
 }
 
 function formatCurrency(value: number): string {
@@ -73,6 +76,7 @@ export function BudgetPdfPreview({
   companyCnpj,
   documentDate,
   clientName,
+  clientPhone,
   clientEmail,
   clientAddress,
   title,
@@ -85,9 +89,10 @@ export function BudgetPdfPreview({
   gridColor = "#000000",
   minScale: minScaleProp,
   showLens = true,
-  layoutId: layoutIdProp,
+  templateId: _templateId,
+  layout,
 }: BudgetPdfPreviewProps) {
-  const layout = getBudgetLayout(layoutIdProp);
+  const isModern = layout.id === "moderno";
   const validItems = items.filter(
     (i) => i.description.trim() !== "" && i.quantity > 0 && i.unitPrice >= 0
   );
@@ -202,7 +207,7 @@ export function BudgetPdfPreview({
             style={{ ...borderStyle, backgroundColor, padding: layout.infoBlockPadding, fontSize: layout.infoLeftFontSize }}
           >
             <p>Cliente: {clientName?.trim() || "Nome do cliente"}</p>
-            <p>Telefone: {companyPhone?.trim() || "Telefone do cliente"}</p>
+            <p>Telefone: {clientPhone?.trim() || "Telefone do cliente"}</p>
             <p>E-mail: {clientEmail?.trim() || "E-mail do cliente"}</p>
             <p>Endereço: {clientAddress?.trim() || "Endereço do cliente"}</p>
           </div>
@@ -340,9 +345,32 @@ export function BudgetPdfPreview({
             borderColor: gridColor,
           }}
         >
+          {isModern && (
+            <div
+              style={{
+                width: "100%",
+                height: 10,
+                backgroundColor: gridColor,
+                marginBottom: 12,
+              }}
+            />
+          )}
+
           <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
             {previewBodyContent}
           </div>
+
+          {isModern && (
+            <div
+              style={{
+                width: "100%",
+                height: 3,
+                backgroundColor: gridColor,
+                marginTop: 12,
+              }}
+            />
+          )}
+
           {previewFooter}
         </div>
       </div>

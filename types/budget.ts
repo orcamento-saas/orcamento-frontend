@@ -11,7 +11,6 @@ export interface Budget {
   userId: string;
   title: string;
   description: string | null;
-  templateType: string;
   value: number;
   status: BudgetStatus;
   pdfUrl: string | null;
@@ -33,14 +32,13 @@ export interface Budget {
   fontColor?: string | null;
   backgroundColor?: string | null;
   gridColor?: string | null;
-  layoutId?: string | null;
+  templateId?: string | null;
 }
 
 export interface PublicBudgetView {
   id: string;
   title: string;
   description: string | null;
-  templateType: string;
   value: number;
   status: BudgetStatus;
   pdfUrl: string | null;
@@ -50,13 +48,12 @@ export interface PublicBudgetView {
   fontColor?: string | null;
   backgroundColor?: string | null;
   gridColor?: string | null;
-  layoutId?: string | null;
+  templateId?: string | null;
 }
 
 export interface CreateBudgetBody {
   title: string;
   description?: string;
-  templateType: string;
   value: number;
   companyLogoUrl?: string;
   companyName?: string;
@@ -75,7 +72,7 @@ export interface CreateBudgetBody {
   fontColor?: string;
   backgroundColor?: string;
   gridColor?: string;
-  layoutId?: string;
+  templateId?: string;
 }
 
 export interface SignBudgetBody {

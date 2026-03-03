@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  getBudget,
-  generatePdf,
-  deleteBudget,
-} from "@/services/budgets";
+import { getBudget, generatePdf, deleteBudget } from "@/services/budgets";
 import type { Budget } from "@/types/budget";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -17,6 +13,10 @@ import { Modal } from "@/components/ui/Modal";
 import { ShareBudget } from "@/components/ShareBudget";
 import { BudgetPdfPreview } from "@/components/BudgetPdfPreview";
 import type { ApiError } from "@/lib/api";
+import {
+  type BudgetLayoutConfig,
+  fetchBudgetLayout,
+} from "@/lib/budgetLayouts";
 
 /** Data do orçamento em YYYY-MM-DD a partir de createdAt. */
 function toDocumentDate(createdAt: string): string {
@@ -48,6 +48,7 @@ export default function DashboardBudgetPage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [layout, setLayout] = useState<BudgetLayoutConfig | null>(null);
 
   useEffect(() => {
     if (!accessToken || !id) return;
@@ -58,6 +59,23 @@ export default function DashboardBudgetPage() {
       })
       .finally(() => setLoading(false));
   }, [id, accessToken]);
+
+  // Carrega o layout correspondente ao template do orçamento (ou simples, se não tiver)
+  useEffect(() => {
+    if (!budget) return;
+    let cancelled = false;
+    const currentTemplate = budget.templateId ?? "simples";
+    fetchBudgetLayout(currentTemplate)
+      .then((data) => {
+        if (!cancelled) setLayout(data);
+      })
+      .catch(() => {
+        if (!cancelled) setLayout(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [budget]);
 
   const handleGeneratePdf = async () => {
     if (!accessToken || !id) return;
@@ -152,28 +170,32 @@ export default function DashboardBudgetPage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 p-4">
-        <BudgetPdfPreview
-          companyLogoUrl={budget.companyLogoUrl ?? ""}
-          companyName={budget.companyName ?? ""}
-          companyAddress={budget.companyAddress ?? ""}
-          companyPhone={budget.companyPhone ?? ""}
-          companyCnpj={budget.companyCnpj ?? ""}
-          documentDate={documentDate}
-          clientName={budget.clientName ?? ""}
-          clientEmail={budget.clientEmail ?? ""}
-          clientAddress={budget.clientAddress ?? ""}
-          title={budget.title}
-          items={budget.items ?? []}
-          total={budget.value}
-          validityDays={validityDays}
-          observation={budget.observation ?? ""}
-          fontColor={budget.fontColor ?? "#18181b"}
-          backgroundColor={budget.backgroundColor ?? "#ffffff"}
-          gridColor={budget.gridColor ?? "#000000"}
-          layoutId={budget.layoutId ?? "simples"}
-          minScale={1.35}
-          showLens={false}
-        />
+        {layout && (
+          <BudgetPdfPreview
+            companyLogoUrl={budget.companyLogoUrl ?? ""}
+            companyName={budget.companyName ?? ""}
+            companyAddress={budget.companyAddress ?? ""}
+            companyPhone={budget.companyPhone ?? ""}
+            companyCnpj={budget.companyCnpj ?? ""}
+            documentDate={documentDate}
+            clientName={budget.clientName ?? ""}
+            clientPhone={budget.clientPhone ?? ""}
+            clientEmail={budget.clientEmail ?? ""}
+            clientAddress={budget.clientAddress ?? ""}
+            title={budget.title}
+            items={budget.items ?? []}
+            total={budget.value}
+            validityDays={validityDays}
+            observation={budget.observation ?? ""}
+            fontColor={budget.fontColor ?? "#18181b"}
+            backgroundColor={budget.backgroundColor ?? "#ffffff"}
+            gridColor={budget.gridColor ?? "#000000"}
+            templateId={budget.templateId ?? "simples"}
+            minScale={1.35}
+            showLens={false}
+            layout={layout}
+          />
+        )}
       </div>
 
       {budget.signedPdfUrl && (

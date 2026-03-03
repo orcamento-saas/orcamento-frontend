@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { createBudget, generatePdf } from "@/services/budgets";
@@ -11,13 +11,11 @@ import { BudgetPdfPreview } from "@/components/BudgetPdfPreview";
 import { LogoEditorModal } from "@/components/LogoEditorModal";
 import type { BudgetItem, CreateBudgetBody } from "@/types/budget";
 import type { ApiError } from "@/lib/api";
-import { getAvailableLayouts, type LayoutId } from "@/lib/budgetLayouts";
-
-const TEMPLATE_OPTIONS = [
-  { value: "default", label: "Padrão" },
-  { value: "minimal", label: "Minimal" },
-  { value: "detailed", label: "Detalhado" },
-];
+import {
+  type LayoutId,
+  type BudgetLayoutConfig,
+  fetchBudgetLayout,
+} from "@/lib/budgetLayouts";
 
 const EMPTY_ITEM: BudgetItem = {
   description: "",
@@ -140,7 +138,6 @@ export default function CreateBudgetPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [templateType, setTemplateType] = useState("default");
   const [companyLogoUrl, setCompanyLogoUrl] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [companyAddress, setCompanyAddress] = useState("");
@@ -164,11 +161,27 @@ export default function CreateBudgetPage() {
   const [previewFontColor, setPreviewFontColor] = useState("#18181b");
   const [previewBgColor, setPreviewBgColor] = useState("#ffffff");
   const [previewGridColor, setPreviewGridColor] = useState("#000000");
-  const [layoutId, setLayoutId] = useState<LayoutId>("simples");
+  const [templateId, setTemplateId] = useState<LayoutId>("simples");
+  const [layout, setLayout] = useState<BudgetLayoutConfig | null>(null);
   const totalCalculado = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
     0
   );
+
+  // Carrega o layout do orçamento sempre que o template selecionado mudar
+  useEffect(() => {
+    let cancelled = false;
+    fetchBudgetLayout(templateId)
+      .then((data) => {
+        if (!cancelled) setLayout(data);
+      })
+      .catch(() => {
+        if (!cancelled) setLayout(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [templateId]);
 
   function addItem() {
     setItems((prev) => [...prev, { ...EMPTY_ITEM }]);
@@ -284,7 +297,6 @@ export default function CreateBudgetPage() {
     const body: CreateBudgetBody = {
       title: title.trim(),
       description: description.trim() || undefined,
-      templateType,
       value: totalCalculado,
       companyLogoUrl: companyLogoUrl.trim() || undefined,
       companyName: companyName.trim() || undefined,
@@ -302,7 +314,7 @@ export default function CreateBudgetPage() {
       fontColor: previewFontColor?.trim() || undefined,
       backgroundColor: previewBgColor?.trim() || undefined,
       gridColor: previewGridColor?.trim() || undefined,
-      layoutId: layoutId || undefined,
+      templateId: templateId || undefined,
     };
 
     setLoading(true);
@@ -650,40 +662,6 @@ export default function CreateBudgetPage() {
             </div>
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-              Template
-            </label>
-            <select
-              value={templateType}
-              onChange={(e) => setTemplateType(e.target.value)}
-              className={inputBase}
-            >
-              {TEMPLATE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-              Layout do PDF
-            </label>
-            <select
-              value={layoutId}
-              onChange={(e) => setLayoutId(e.target.value as LayoutId)}
-              className={inputBase}
-            >
-              {getAvailableLayouts().map((layout) => (
-                <option key={layout.id} value={layout.id}>
-                  {layout.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {error && (
             <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
               {error}
@@ -714,26 +692,30 @@ export default function CreateBudgetPage() {
             Prévia (formato do PDF)
           </h2>
           <div className="min-h-0 flex-1 overflow-hidden">
-            <BudgetPdfPreview
-              companyLogoUrl={companyLogoUrl}
-              companyName={companyName}
-              companyAddress={companyAddress}
-              companyPhone={companyPhone}
-              companyCnpj={companyCnpj}
-              documentDate={documentDate}
-              clientName={clientName}
-              clientEmail={clientEmail}
-              clientAddress={clientAddress}
-              title={title}
-              items={items}
-              total={totalCalculado}
-              validityDays={validityDays}
-              observation={observation}
-              fontColor={previewFontColor}
-              backgroundColor={previewBgColor}
-              gridColor={previewGridColor}
-              layoutId={layoutId}
-            />
+            {layout && (
+              <BudgetPdfPreview
+                companyLogoUrl={companyLogoUrl}
+                companyName={companyName}
+                companyAddress={companyAddress}
+                companyPhone={companyPhone}
+                companyCnpj={companyCnpj}
+                documentDate={documentDate}
+                clientName={clientName}
+                clientPhone={clientPhone}
+                clientEmail={clientEmail}
+                clientAddress={clientAddress}
+                title={title}
+                items={items}
+                total={totalCalculado}
+                validityDays={validityDays}
+                observation={observation}
+                fontColor={previewFontColor}
+                backgroundColor={previewBgColor}
+                gridColor={previewGridColor}
+                templateId={templateId}
+                layout={layout}
+              />
+            )}
           </div>
         </div>
         <div className="flex min-h-0 w-52 shrink-0 flex-col overflow-hidden">
@@ -741,24 +723,92 @@ export default function CreateBudgetPage() {
             Layout
           </h2>
           <aside className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-3">
-          <ColorPaletteRow
-            label="Fonte"
-            value={previewFontColor}
-            onChange={setPreviewFontColor}
-            colors={["#2563eb", "#16a34a", "#dc2626", "#ca8a04", "#6b7280", "#7c3aed", "#000000", "#ffffff"]}
-          />
-          <ColorPaletteRow
-            label="Grade"
-            value={previewGridColor}
-            onChange={setPreviewGridColor}
-            colors={["#2563eb", "#16a34a", "#dc2626", "#ca8a04", "#6b7280", "#7c3aed", "#000000", "#ffffff"]}
-          />
-          <ColorPaletteRow
-            label="Fundo"
-            value={previewBgColor}
-            onChange={setPreviewBgColor}
-            colors={["#dbeafe", "#dcfce7", "#fee2e2", "#fef9c3", "#f3f4f6", "#f3e8ff", "#e5e5e5", "#ffffff"]}
-          />
+            <ColorPaletteRow
+              label="Fonte"
+              value={previewFontColor}
+              onChange={setPreviewFontColor}
+              colors={[
+                "#2563eb",
+                "#16a34a",
+                "#dc2626",
+                "#ca8a04",
+                "#6b7280",
+                "#7c3aed",
+                "#000000",
+                "#ffffff",
+              ]}
+            />
+            <ColorPaletteRow
+              label="Grade"
+              value={previewGridColor}
+              onChange={setPreviewGridColor}
+              colors={[
+                "#2563eb",
+                "#16a34a",
+                "#dc2626",
+                "#ca8a04",
+                "#6b7280",
+                "#7c3aed",
+                "#000000",
+                "#ffffff",
+              ]}
+            />
+            <ColorPaletteRow
+              label="Fundo"
+              value={previewBgColor}
+              onChange={setPreviewBgColor}
+              colors={[
+                "#dbeafe",
+                "#dcfce7",
+                "#fee2e2",
+                "#fef9c3",
+                "#f3f4f6",
+                "#f3e8ff",
+                "#e5e5e5",
+                "#ffffff",
+              ]}
+            />
+
+            <div className="mt-2 border-t border-zinc-200 pt-3">
+              <p className="mb-2 text-center text-sm font-medium text-zinc-700">
+                Template
+              </p>
+              <div className="space-y-1 text-sm text-zinc-700">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="templateId"
+                    value="simples"
+                    checked={templateId === "simples"}
+                    onChange={() => setTemplateId("simples")}
+                    className="h-4 w-4 rounded border-zinc-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span>Simples</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="templateId"
+                    value="moderno"
+                    checked={templateId === "moderno"}
+                    onChange={() => setTemplateId("moderno")}
+                    className="h-4 w-4 rounded border-zinc-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span>Moderno</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="templateId"
+                    value="profissional"
+                    checked={templateId === "profissional"}
+                    onChange={() => setTemplateId("profissional")}
+                    className="h-4 w-4 rounded border-zinc-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span>Profissional</span>
+                </label>
+              </div>
+            </div>
           </aside>
         </div>
       </div>
