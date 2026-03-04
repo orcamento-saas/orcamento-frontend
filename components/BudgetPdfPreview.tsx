@@ -8,6 +8,53 @@ import type { BudgetLayoutConfig } from "@/lib/budgetLayouts";
 const A4_WIDTH_PX = 210 * (96 / 25.4);
 const A4_HEIGHT_PX = 297 * (96 / 25.4);
 
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  return { h: h * 360, s: s * 100, l: l * 100 };
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  h /= 360;
+  s /= 100;
+  l /= 100;
+
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => {
+    const k = (n + h * 12) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function createGradientFromBaseColor(baseColor: string): string {
+  const hsl = hexToHsl(baseColor);
+  const color1 = hslToHex(hsl.h, Math.min(hsl.s, 80), Math.min(hsl.l + 5, 85));
+  const color2 = hslToHex(hsl.h, Math.min(hsl.s + 10, 90), Math.max(hsl.l - 10, 15));
+  return `linear-gradient(135deg, ${color1} 0%, ${color2} 100%)`;
+}
+
 interface BudgetPdfPreviewProps {
   companyLogoUrl: string;
   companyName: string;
@@ -86,13 +133,32 @@ export function BudgetPdfPreview({
   observation,
   fontColor = "#18181b",
   backgroundColor = "#ffffff",
-  gridColor = "#000000",
+  gridColor = "#20b2aa",
   minScale: minScaleProp,
   showLens = true,
   templateId: _templateId,
   layout,
 }: BudgetPdfPreviewProps) {
-  const isModern = layout.id === "moderno";
+  const isModern = layout?.id === "moderno";
+  
+  // Função para detectar cor clara
+  const isLightColor = (hex: string): boolean => {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const l = (max + min) / 2;
+    return l > 0.7;
+  };
+  
+  // Para template moderno: ajusta cores dos itens quando background for claro
+  const isLightBg = isModern && isLightColor(backgroundColor);
+  const itemBgEven = isLightBg ? backgroundColor : '#f8f9fa';
+  
+  // Gera gradient baseado na cor de fundo para áreas coloridas
+  const themeGradient = createGradientFromBaseColor(gridColor);
+  
   const validItems = items.filter(
     (i) => i.description.trim() !== "" && i.quantity > 0 && i.unitPrice >= 0
   );
@@ -159,6 +225,314 @@ export function BudgetPdfPreview({
     fontFamily: layout.fontFamily,
   };
 
+  // Template Moderno - estrutura igual à imagem
+  const modernBodyContent = (
+    <div className="relative h-full" style={baseBodyStyle}>
+      {/* Faixa no topo com nome da empresa */}
+      <div className="relative mb-8" style={{ height: 80 }}>
+        <div 
+          className="absolute top-0 left-0 flex items-center pl-8"
+          style={{
+            width: '100%',
+            height: '80px',
+            background: themeGradient,
+            clipPath: 'polygon(0 0, 85% 0, 75% 100%, 0 100%)',
+            zIndex: 1,
+          }}
+        >
+          <div
+            className="font-bold uppercase text-white"
+            style={{
+              fontSize: 26,
+              textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+              color: 'white',
+            }}
+          >
+            {companyName?.trim() || "NOME DA EMPRESA"}
+          </div>
+        </div>
+        
+        {/* Logo fora da faixa à direita */}
+        <div className="absolute" style={{ top: 15, right: 20, zIndex: 2 }}>
+          {logoUrl ? (
+            <div
+              className="shrink-0 overflow-hidden"
+              style={{ 
+                width: layout.logoWidth, 
+                height: layout.logoHeight,
+                borderRadius: layout.logoBorderRadius
+              }}
+            >
+              {!logoError ? (
+                <img
+                  src={logoUrl}
+                  alt="Logo"
+                  className="h-full w-full object-contain"
+                  style={{ borderRadius: layout.logoBorderRadius }}
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                  onError={() => setLogoError(true)}
+                />
+              ) : (
+                <div 
+                  className="flex h-full w-full items-center justify-center text-xs border border-dashed border-gray-400 text-gray-600"
+                  style={{ 
+                    borderRadius: layout.logoBorderRadius
+                  }}
+                >
+                  Logo
+                </div>
+              )}
+            </div>
+          ) : (
+            <div
+              className="flex shrink-0 items-center justify-center border-dashed text-center text-xs border-gray-400 text-gray-600"
+              style={{ 
+                width: layout.logoWidth, 
+                height: layout.logoHeight,
+                border: '1px dashed #ccc',
+                borderRadius: layout.logoBorderRadius
+              }}
+            >
+              Logo da empresa
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Layout de conteúdo: dados do cliente + orçamento */}
+      <div className="px-5 mb-4 flex justify-between">
+        <div className="flex-1 max-w-[60%]">
+          <p className="mb-2" style={{ fontSize: 16, lineHeight: 1.4 }}>
+            <strong>Cliente:</strong> {clientName?.trim() || "Nome do cliente"}
+          </p>
+          <p className="mb-2" style={{ fontSize: 16, lineHeight: 1.4 }}>
+            <strong>Telefone:</strong> {clientPhone?.trim() || "Telefone do cliente"}
+          </p>
+          <p className="mb-2" style={{ fontSize: 16, lineHeight: 1.4 }}>
+            <strong>E-mail:</strong> {clientEmail?.trim() || "E-mail do cliente"}
+          </p>
+          <p style={{ fontSize: 16, lineHeight: 1.4 }}>
+            <strong>Endereço:</strong> {clientAddress?.trim() || "Endereço do cliente"}
+          </p>
+        </div>
+        
+        <div 
+          className="text-center px-5 py-5 bg-white border border-gray-200 shadow-lg"
+          style={{ 
+            width: 220,
+            borderRadius: 8,
+          }}
+        >
+          <div
+            className="font-bold uppercase mb-3"
+            style={{
+              fontSize: 20,
+              color: gridColor,
+            }}
+          >
+            ORÇAMENTO
+          </div>
+          <div style={{ fontSize: 16, color: fontColor, marginBottom: 16 }}>
+            {dataExibida || "Data do documento"}
+          </div>
+        </div>
+      </div>
+
+      {/* Container principal do conteúdo */}
+      <div className="px-5 flex-1 flex flex-col" style={{ paddingBottom: 100, minHeight: 'calc(100vh - 200px)' }}>
+        {/* Tabela de itens */}
+        <div 
+          className="w-full mb-8 overflow-hidden"
+          style={{
+            borderRadius: 10,
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          }}
+        >
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th
+                  className="text-center font-bold uppercase px-4 py-4 text-white"
+                  style={{
+                    fontSize: 13,
+                    background: themeGradient,
+                    textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  QUANT.
+                </th>
+                <th
+                  className="text-center font-bold uppercase px-4 py-4 text-white"
+                  style={{
+                    fontSize: 13,
+                    background: themeGradient,
+                    textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  DESCRIÇÃO DO ITEM
+                </th>
+                <th
+                  className="text-center font-bold uppercase px-4 py-4 text-white"
+                  style={{
+                    fontSize: 13,
+                    background: themeGradient,
+                    textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  VALOR UN.
+                </th>
+                <th
+                  className="text-center font-bold uppercase px-4 py-4 text-white"
+                  style={{
+                    fontSize: 13,
+                    background: themeGradient,
+                    textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  VALOR TOTAL
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {validItems.map((item, i) => (
+                <tr 
+                  key={i}
+                  className="hover:bg-green-50 transition-colors duration-300"
+                  style={{
+                    backgroundColor: i % 2 === 0 ? 'white' : itemBgEven,
+                  }}
+                >
+                  <td className="text-center px-4 py-4" style={{ fontSize: 14 }}>
+                    {item.quantity}
+                  </td>
+                  <td className="text-left px-4 py-4" style={{ fontSize: 14 }}>
+                    {item.description}
+                  </td>
+                  <td className="text-center px-4 py-4" style={{ fontSize: 14 }}>
+                    {formatCurrency(item.unitPrice)}
+                  </td>
+                  <td className="text-center px-4 py-4" style={{ fontSize: 14 }}>
+                    {formatCurrency(item.quantity * item.unitPrice)}
+                  </td>
+                </tr>
+              ))}
+              {Array.from({ length: emptyRows }).map((_, i) => (
+                <tr 
+                  key={`empty-${i}`}
+                  style={{
+                    backgroundColor: (validItems.length + i) % 2 === 0 ? 'white' : itemBgEven,
+                  }}
+                >
+                  <td className="px-4 py-4">&nbsp;</td>
+                  <td className="px-4 py-4">&nbsp;</td>
+                  <td className="px-4 py-4">&nbsp;</td>
+                  <td className="px-4 py-4">&nbsp;</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Validade e Total */}
+        <div className="flex items-center justify-between" style={{ marginBottom: 5 }}>
+          <span style={{ fontSize: 14, color: fontColor }}>
+            {validityDays > 0 ? `Válido por ${validityDays} dias` : "Válido por 15 dias"}
+          </span>
+          <div className="flex items-center gap-4">
+            <span className="font-bold" style={{ fontSize: 16 }}>TOTAL GERAL</span>
+            <span
+              className="font-bold text-white px-5 py-3"
+              style={{
+                fontSize: 18,
+                background: themeGradient,
+                borderRadius: 8,
+                boxShadow: '0 2px 8px rgba(32, 178, 170, 0.3)',
+              }}
+            >
+              {formatCurrency(total)}
+            </span>
+          </div>
+        </div>
+
+        {/* Observação e Assinatura lado a lado */}
+        <div className="flex gap-4" style={{ margin: '10px 0 0 0', minHeight: 160, flex: 1 }}>
+          <div
+            className="flex-1 px-3 py-3 flex flex-col overflow-hidden"
+            style={{
+              border: '1px solid #e9ecef',
+              borderRadius: 10,
+              background: isModern ? backgroundColor : '#f8f9fa',
+              minHeight: 160,
+              height: '100%',
+            }}
+          >
+            <p 
+              className="font-bold mb-2" 
+              style={{ 
+                fontSize: 16,
+                color: gridColor
+              }}
+            >
+              Observação:
+            </p>
+            {observation ? (
+              <p style={{ fontSize: 14, whiteSpace: "pre-wrap", lineHeight: 1.6, flex: 1, overflow: "hidden" }}>
+                {observation}
+              </p>
+            ) : (
+              <div className="flex-1" />
+            )}
+          </div>
+
+          <div 
+            className="text-center px-3 py-3 flex flex-col overflow-hidden"
+            style={{ 
+              width: 280,
+              background: isModern ? backgroundColor : '#f8f9fa',
+              border: '1px solid #e9ecef',
+              borderRadius: 10,
+              minHeight: 160,
+              height: '100%',
+            }}
+          >
+            <p className="font-bold mb-2" style={{ fontSize: 16, color: gridColor }}>
+              Assinatura:
+            </p>
+            <div
+              style={{
+                borderBottom: isModern ? `2px solid ${backgroundColor}` : '2px solid #20b2aa',
+                minHeight: 60,
+                marginBottom: 5,
+                marginTop: 'auto',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Rodapé com fundo curvo e dados da empresa */}
+        <div 
+          className="absolute bottom-0 left-0 right-0 flex items-center justify-center"
+          style={{
+            width: '100%',
+            height: 100,
+            background: themeGradient,
+            clipPath: 'polygon(0 30%, 100% 30%, 100% 100%, 0 100%)',
+            borderRadius: '15px',
+          }}
+        >
+          <div className="text-center text-white" style={{ fontSize: 11, marginTop: 25 }}>
+            <p style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)', margin: '3px 0' }}>Endereço: {companyAddress?.trim() || "Endereço da empresa"}</p>
+            <p style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)', margin: '3px 0' }}>Telefone: {companyPhone?.trim() || "Telefone da empresa"}</p>
+            <p style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)', margin: '3px 0' }}>CNPJ: {companyCnpj?.trim() || "CNPJ da empresa"}</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+
+  // Template Simples (original)
   const previewBodyContent = (
     <div className="flex flex-col" style={baseBodyStyle}>
       {/* 1. Header: nome da empresa centralizado na página + logo à direita */}
@@ -204,7 +578,7 @@ export function BudgetPdfPreview({
         <div className="flex">
           <div
             className="min-w-0 flex-1 border-r"
-            style={{ ...borderStyle, backgroundColor, padding: layout.infoBlockPadding, fontSize: layout.infoLeftFontSize }}
+            style={{ ...borderStyle, backgroundColor, padding: layout.infoBlockPadding, fontSize: layout.infoLeftFontSize, color: fontColor }}
           >
             <p>Cliente: {clientName?.trim() || "Nome do cliente"}</p>
             <p>Telefone: {clientPhone?.trim() || "Telefone do cliente"}</p>
@@ -235,19 +609,19 @@ export function BudgetPdfPreview({
       >
         <thead>
           <tr>
-            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize }}>QUANT.</th>
-            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize }}>DESCRIÇÃO DO ITEM</th>
-            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize }}>VALOR UN.</th>
-            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize }}>VALOR TOTAL</th>
+            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize, color: fontColor }}>QUANT.</th>
+            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize, color: fontColor }}>DESCRIÇÃO DO ITEM</th>
+            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize, color: fontColor }}>VALOR UN.</th>
+            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize, color: fontColor }}>VALOR TOTAL</th>
           </tr>
         </thead>
         <tbody>
           {validItems.map((item, i) => (
             <tr key={i}>
-              <td className="border text-center" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize }}>{item.quantity}</td>
-              <td className="border text-center" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize }}>{item.description}</td>
-              <td className="border text-center" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize }}>{formatCurrency(item.unitPrice)}</td>
-              <td className="border text-center" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize }}>{formatCurrency(item.quantity * item.unitPrice)}</td>
+              <td className="border text-center" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize, color: fontColor }}>{item.quantity}</td>
+              <td className="border text-center" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize, color: fontColor }}>{item.description}</td>
+              <td className="border text-center" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize, color: fontColor }}>{formatCurrency(item.unitPrice)}</td>
+              <td className="border text-center" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize, color: fontColor }}>{formatCurrency(item.quantity * item.unitPrice)}</td>
             </tr>
           ))}
           {Array.from({ length: emptyRows }).map((_, i) => (
@@ -263,14 +637,14 @@ export function BudgetPdfPreview({
 
       {/* 4. Válido por X dias (esq) | TOTAL GERAL + valor em caixa arredondada (dir) */}
       <div className="flex items-center justify-between" style={{ marginTop: layout.summaryMarginTop, gap: layout.totalWrapGap }}>
-        <span style={{ fontSize: layout.validityFontSize }}>
+        <span style={{ fontSize: layout.validityFontSize, color: fontColor }}>
           {validityDays > 0 ? `Válido por ${validityDays} dias` : "Válido por 15 dias"}
         </span>
         <div className="flex items-center gap-2" style={{ gap: layout.totalWrapGap }}>
-          <span className="font-bold" style={{ fontSize: layout.totalLabelFontSize }}>TOTAL GERAL</span>
+          <span className="font-bold" style={{ fontSize: layout.totalLabelFontSize, color: fontColor }}>TOTAL GERAL</span>
           <span
             className="border font-bold"
-            style={{ ...borderStyle, backgroundColor, padding: layout.totalValuePadding, borderRadius: layout.totalValueBorderRadius, fontSize: layout.totalValueFontSize }}
+            style={{ ...borderStyle, backgroundColor, padding: layout.totalValuePadding, borderRadius: layout.totalValueBorderRadius, fontSize: layout.totalValueFontSize, color: fontColor }}
           >
             {formatCurrency(total)}
           </span>
@@ -282,8 +656,8 @@ export function BudgetPdfPreview({
         className="border"
         style={{ ...borderStyle, backgroundColor, padding: layout.boxPadding, borderRadius: layout.boxBorderRadius, marginTop: layout.boxMarginTop }}
       >
-        <p className="font-medium" style={{ marginBottom: layout.boxLabelMarginBottom }}>Assinatura:</p>
-        <div className="border-b border-zinc-300" style={{ minHeight: layout.signatureLineMinHeight }} />
+        <p className="font-medium" style={{ marginBottom: layout.boxLabelMarginBottom, color: fontColor }}>Assinatura:</p>
+        <div className="border-b border-zinc-300 mt-auto" style={{ minHeight: layout.signatureLineMinHeight }} />
       </div>
 
       {/* 6. Caixa Observação */}
@@ -319,7 +693,9 @@ export function BudgetPdfPreview({
   return (
     <div
       ref={containerRef}
-      className={`pdf-preview-viewport relative flex h-full min-h-0 w-full max-w-full justify-center ${minScaleProp != null && minScaleProp > 0 ? "overflow-auto" : "overflow-hidden"}`}
+      className={`pdf-preview-viewport relative flex h-full min-h-0 w-full max-w-full justify-center ${
+        minScaleProp != null && minScaleProp > 0 ? "overflow-auto" : "overflow-hidden"
+      }`}
     >
       <div
         ref={contentWrapperRef}
@@ -336,7 +712,7 @@ export function BudgetPdfPreview({
           style={{
             width: A4_WIDTH_PX,
             height: A4_HEIGHT_PX,
-            padding: layout.bodyPadding,
+            padding: isModern ? "20px" : layout.bodyPadding,
             boxSizing: "border-box",
             transform: `scale(${scale})`,
             transformOrigin: "top left",
@@ -345,33 +721,14 @@ export function BudgetPdfPreview({
             borderColor: gridColor,
           }}
         >
-          {isModern && (
-            <div
-              style={{
-                width: "100%",
-                height: 10,
-                backgroundColor: gridColor,
-                marginBottom: 12,
-              }}
-            />
-          )}
+          {/* Remover as faixas pretas do container - elas estão no modernBodyContent */}
 
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
-            {previewBodyContent}
+          <div style={{ flex: 1, minHeight: 0, overflow: isModern ? "hidden" : "auto" }}>
+            {isModern ? modernBodyContent : previewBodyContent}
           </div>
 
-          {isModern && (
-            <div
-              style={{
-                width: "100%",
-                height: 3,
-                backgroundColor: gridColor,
-                marginTop: 12,
-              }}
-            />
-          )}
-
-          {previewFooter}
+          {/* Rodapé apenas para o template simples */}
+          {!isModern && previewFooter}
         </div>
       </div>
 
@@ -392,7 +749,7 @@ export function BudgetPdfPreview({
               position: "absolute",
               width: A4_WIDTH_PX,
               height: A4_HEIGHT_PX,
-              padding: layout.bodyPadding,
+              padding: isModern ? "20px" : layout.bodyPadding,
               boxSizing: "border-box",
               transform: `scale(${scale * LENS_ZOOM})`,
               transformOrigin: "top left",
@@ -404,9 +761,9 @@ export function BudgetPdfPreview({
             }}
           >
             <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-              {previewBodyContent}
+              {isModern ? modernBodyContent : previewBodyContent}
             </div>
-            {previewFooter}
+            {!isModern && previewFooter}
           </div>
         </div>
       )}

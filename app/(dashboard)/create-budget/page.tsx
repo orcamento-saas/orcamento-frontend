@@ -160,7 +160,7 @@ export default function CreateBudgetPage() {
   const [logoPendingFileName, setLogoPendingFileName] = useState("");
   const [previewFontColor, setPreviewFontColor] = useState("#18181b");
   const [previewBgColor, setPreviewBgColor] = useState("#ffffff");
-  const [previewGridColor, setPreviewGridColor] = useState("#000000");
+  const [previewGridColor, setPreviewGridColor] = useState("#20b2aa");
   const [templateId, setTemplateId] = useState<LayoutId>("simples");
   const [layout, setLayout] = useState<BudgetLayoutConfig | null>(null);
   const totalCalculado = items.reduce(
@@ -728,42 +728,42 @@ export default function CreateBudgetPage() {
               value={previewFontColor}
               onChange={setPreviewFontColor}
               colors={[
-                "#2563eb",
-                "#16a34a",
-                "#dc2626",
-                "#ca8a04",
+                "#3b82f6",
+                "#20b2aa",
+                "#ef4444",
+                "#f59e0b",
                 "#6b7280",
-                "#7c3aed",
+                "#8b5cf6",
                 "#000000",
                 "#ffffff",
               ]}
             />
             <ColorPaletteRow
-              label="Grade"
+              label={templateId === "moderno" ? "Fundo" : "Grade"}
               value={previewGridColor}
               onChange={setPreviewGridColor}
               colors={[
-                "#2563eb",
-                "#16a34a",
-                "#dc2626",
-                "#ca8a04",
+                "#3b82f6",
+                "#20b2aa",
+                "#ef4444",
+                "#f59e0b",
                 "#6b7280",
-                "#7c3aed",
+                "#8b5cf6",
                 "#000000",
                 "#ffffff",
               ]}
             />
             <ColorPaletteRow
-              label="Fundo"
+              label={templateId === "moderno" ? "Grade" : "Fundo"}
               value={previewBgColor}
               onChange={setPreviewBgColor}
               colors={[
                 "#dbeafe",
-                "#dcfce7",
+                "#e0f7fa",
                 "#fee2e2",
                 "#fef9c3",
                 "#f3f4f6",
-                "#f3e8ff",
+                "#ede9fe",
                 "#e5e5e5",
                 "#ffffff",
               ]}
