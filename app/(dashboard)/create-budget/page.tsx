@@ -132,6 +132,15 @@ function formatPhone(value: string): string {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
+/** Retorna data atual no formato YYYY-MM-DD para input type="date" */
+function getTodayISO(): string {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, "0");
+  const d = String(today.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export default function CreateBudgetPage() {
   const router = useRouter();
   const { accessToken } = useAuth();
@@ -147,7 +156,7 @@ export default function CreateBudgetPage() {
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [clientAddress, setClientAddress] = useState("");
-  const [documentDate, setDocumentDate] = useState("");
+  const [documentDate, setDocumentDate] = useState(getTodayISO()); // Data atual por padrão
   const [validityDays, setValidityDays] = useState<number>(15);
   const [observation, setObservation] = useState("");
   const [items, setItems] = useState<BudgetItem[]>([{ ...EMPTY_ITEM }]);
@@ -467,8 +476,8 @@ export default function CreateBudgetPage() {
                 <input
                   type="date"
                   value={documentDate}
-                  onChange={(e) => setDocumentDate(e.target.value)}
-                  className={inputBase}
+                  readOnly
+                  className={`${inputBase} bg-zinc-50 cursor-not-allowed`}
                 />
               </div>
               <Input

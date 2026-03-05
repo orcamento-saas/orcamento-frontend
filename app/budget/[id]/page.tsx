@@ -26,6 +26,27 @@ function formatDateShort(iso: string): string {
   });
 }
 
+/** Exibe a data do documento ou data de criação como fallback */
+function getDisplayDate(budget: PublicBudgetView): string {
+  if (budget.documentDate) {
+    // Usa a mesma lógica do BudgetPdfPreview para evitar problemas de timezone
+    const dateStr = budget.documentDate;
+    if (typeof dateStr !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+      return formatDateShort(budget.createdAt);
+    }
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return formatDateShort(budget.createdAt);
+    const [, y, m, d] = match;
+    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit", 
+      year: "numeric",
+    });
+  }
+  return formatDateShort(budget.createdAt);
+}
+
 export default function PublicBudgetPage() {
   const params = useParams();
   const id = params.id as string;
@@ -130,7 +151,7 @@ export default function PublicBudgetPage() {
             {budget.title}
           </p>
           <p className="mt-1 text-sm text-zinc-700">
-            Total {formatCurrency(budget.value)} - {formatDateShort(budget.createdAt)}
+            Total {formatCurrency(budget.value)} - {getDisplayDate(budget)}
           </p>
           {!signed && budget.pdfUrl && (
             <div className="mt-4">

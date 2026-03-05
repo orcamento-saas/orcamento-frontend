@@ -26,6 +26,23 @@ function formatDateShort(iso: string): string {
   });
 }
 
+/** Exibe a data do documento ou data de criação como fallback */
+function getDisplayDate(budget: Budget): string {
+  if (budget.documentDate) {
+    // Usa a mesma lógica do BudgetPdfPreview para evitar problemas de timezone
+    const dateStr = budget.documentDate;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return formatDateShort(budget.createdAt);
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit", 
+      year: "numeric",
+    });
+  }
+  return formatDateShort(budget.createdAt);
+}
+
 function matchesSearch(b: Budget, search: string): boolean {
   if (!search.trim()) return true;
   const q = search.trim().toLowerCase();
@@ -186,7 +203,7 @@ export default function MyBudgetsPage() {
                         {b.title ?? "—"}
                       </p>
                       <p className="mt-1 text-sm text-zinc-700">
-                        Total {formatCurrency(b.value)} - {formatDateShort(b.createdAt)}
+                        Total {formatCurrency(b.value)} - {getDisplayDate(b)}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">

@@ -25,6 +25,7 @@ export interface Budget {
   clientEmail?: string | null;
   clientPhone?: string | null;
   clientAddress?: string | null;
+  documentDate?: string | null;
   validityDate?: string | null;
   validityDays?: number | null;
   observation?: string | null;
@@ -44,6 +45,7 @@ export interface PublicBudgetView {
   pdfUrl: string | null;
   signedPdfUrl: string | null;
   createdAt: string;
+  documentDate?: string | null;
   clientName?: string | null;
   fontColor?: string | null;
   backgroundColor?: string | null;

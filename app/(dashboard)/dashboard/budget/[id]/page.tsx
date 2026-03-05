@@ -18,13 +18,20 @@ import {
   fetchBudgetLayout,
 } from "@/lib/budgetLayouts";
 
-/** Data do orçamento em YYYY-MM-DD a partir de createdAt. */
-function toDocumentDate(createdAt: string): string {
-  if (!createdAt) return "";
-  const d = new Date(createdAt);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+/** Formata data ISO para YYYY-MM-DD evitando problemas de timezone. */
+function formatDocumentDate(dateString: string | null | undefined): string {
+  if (!dateString) return "";
+  
+  // Se já está no formato ISO (YYYY-MM-DD), usa diretamente
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+  
+  // Caso contrário, converte Date para formato YYYY-MM-DD evitando timezone
+  const d = new Date(dateString);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 
@@ -125,7 +132,7 @@ export default function DashboardBudgetPage() {
     );
   }
 
-  const documentDate = toDocumentDate(budget.createdAt);
+  const documentDate = formatDocumentDate(budget.documentDate);
   const validityDays = budget.validityDays ?? 0;
 
   return (
