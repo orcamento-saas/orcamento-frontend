@@ -129,13 +129,14 @@ export function LogoEditorModal({
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="secondary" onClick={onClose}>
+          <Button type="button" onClick={onClose} className="bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 shadow-sm">
             Cancelar
           </Button>
           <Button
             type="button"
             onClick={handleConfirm}
             disabled={!croppedAreaPixels || confirming}
+            className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {confirming ? "Aplicando…" : "Usar esta logo"}
           </Button>

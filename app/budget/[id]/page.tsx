@@ -139,22 +139,22 @@ export default function PublicBudgetPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-white to-primary-50/20">
-      <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-        <Card className="mb-8">
+      <div className="mx-auto max-w-lg px-3 py-2 sm:px-4">
+        <Card className="mb-3 py-3 px-4 bg-teal-50">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={budget.status} />
           </div>
-          <p className="mt-3 font-semibold text-zinc-900">
+          <p className="mt-2 font-semibold text-zinc-900 text-sm">
             {budget.clientName ?? "—"}
           </p>
-          <p className="mt-1 text-lg font-medium text-zinc-800">
+          <p className="mt-1 text-base font-medium text-zinc-800">
             {budget.title}
           </p>
-          <p className="mt-1 text-sm text-zinc-700">
+          <p className="mt-1 text-xs text-zinc-700">
             Total {formatCurrency(budget.value)} - {getDisplayDate(budget)}
           </p>
           {!signed && budget.pdfUrl && (
-            <div className="mt-4">
+            <div className="mt-2">
               <a
                 href={budget.pdfUrl}
                 target="_blank"
@@ -163,7 +163,7 @@ export default function PublicBudgetPage() {
               >
                 <Button
                   size="sm"
-                  className="bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800"
+                  className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm"
                 >
                   Ver orçamento
                 </Button>
@@ -178,7 +178,7 @@ export default function PublicBudgetPage() {
                 rel="noopener noreferrer"
                 className="inline-block"
               >
-                <Button size="sm">
+                <Button size="sm" className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">
                   Abrir PDF assinado
                 </Button>
               </a>
@@ -187,23 +187,23 @@ export default function PublicBudgetPage() {
         </Card>
 
         {signed ? (
-          <Card className="border-emerald-200 bg-emerald-50/50">
-            <h2 className="text-lg font-semibold text-emerald-900">
+          <Card className="border-emerald-200 bg-teal-50 py-3 px-4">
+            <h2 className="text-base font-semibold text-emerald-900">
               Assinatura enviada
             </h2>
-            <p className="mt-2 text-emerald-800">
+            <p className="mt-1 text-sm text-emerald-800">
               O orçamento foi assinado com sucesso. Obrigado!
             </p>
           </Card>
         ) : (
-          <Card>
-            <h2 className="text-lg font-semibold text-zinc-900">
+          <Card className="py-3 px-4">
+            <h2 className="text-base font-semibold text-zinc-900">
               Assinar orçamento
             </h2>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-xs text-zinc-500">
               Preencha os dados e desenhe sua assinatura abaixo.
             </p>
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <form onSubmit={handleSubmit} className="mt-3 space-y-2">
               <Input
                 label="Nome"
                 value={clientName}
@@ -220,23 +220,23 @@ export default function PublicBudgetPage() {
                 placeholder="seu@email.com"
               />
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                <label className="mb-0.5 block text-xs font-medium text-zinc-700">
                   Assinatura
                 </label>
                 <SignatureCanvas
                   onSignatureChange={setSignatureDataUrl}
                   width={400}
-                  height={180}
+                  height={100}
                 />
               </div>
               {submitError && (
-                <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                <p className="rounded-lg bg-red-50 p-1.5 text-xs text-red-700">
                   {submitError}
                 </p>
               )}
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm"
                 size="lg"
                 isLoading={submitting}
               >
@@ -246,8 +246,8 @@ export default function PublicBudgetPage() {
           </Card>
         )}
 
-        <p className="mt-8 text-center">
-          <Button size="sm" onClick={() => window.close()}>
+        <p className="mt-2 text-center">
+          <Button size="sm" onClick={() => window.close()} className="bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 shadow-sm">
             Fechar
           </Button>
         </p>

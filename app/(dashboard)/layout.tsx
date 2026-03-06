@@ -17,28 +17,28 @@ export default function DashboardLayout({
 
   return (
     <AuthGuard>
-      <div className="flex h-screen overflow-hidden bg-zinc-50">
+      <div className="flex h-screen overflow-hidden bg-gray-50">
         {/* Sidebar lateral - apenas desktop */}
         <aside
-          className={`hidden lg:flex shrink-0 flex-col border-r border-zinc-200 bg-white transition-[width] duration-200 ${
+          className={`hidden lg:flex shrink-0 flex-col border-r border-teal-600 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 transition-[width] duration-200 ${
             collapsed ? "w-16" : "w-56"
           }`}
         >
-          <div className={`flex h-14 items-center border-b border-zinc-200 px-3 ${collapsed ? "justify-center" : "flex justify-between"}`}>
+          <div className={`flex h-14 items-center border-b border-white/20 px-3 ${collapsed ? "justify-center" : "flex justify-between"}`}>
             {!collapsed ? (
               <>
                 <div className="min-w-0 flex-1" />
                 <Link
                   href="/dashboard"
-                  className="shrink-0 text-lg font-semibold tracking-tight text-zinc-900"
+                  className="shrink-0 text-lg font-semibold tracking-tight text-white"
                 >
-                  Orçamento
+                  Orçamento já
                 </Link>
                 <div className="flex min-w-0 flex-1 justify-end">
                   <button
                     type="button"
                     onClick={() => setCollapsed((c) => !c)}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/80 hover:bg-white/20 hover:text-white"
                     aria-label="Recolher menu"
                   >
                     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -51,7 +51,7 @@ export default function DashboardLayout({
               <button
                 type="button"
                 onClick={() => setCollapsed((c) => !c)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/80 hover:bg-white/20 hover:text-white"
                 aria-label="Expandir menu"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -71,7 +71,7 @@ export default function DashboardLayout({
               Novo orçamento
             </NavLink>
           </nav>
-          <div className="border-t border-zinc-200 p-3">
+          <div className="border-t border-white/20 p-3">
             <LogoutButton collapsed={collapsed} />
           </div>
         </aside>
@@ -79,14 +79,14 @@ export default function DashboardLayout({
         {/* Container principal com header mobile */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* Header mobile - apenas mobile */}
-          <header className="flex lg:hidden shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 py-3">
-            <Link href="/dashboard" className="text-lg font-semibold tracking-tight text-zinc-900">
-              Orçamento
+          <header className="flex lg:hidden shrink-0 items-center justify-between border-b border-white/20 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 px-4 py-3">
+            <Link href="/dashboard" className="text-lg font-semibold tracking-tight text-white">
+              Orçamento já
             </Link>
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 transition-all duration-200"
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-white/80 hover:bg-white/20 hover:text-white transition-all duration-200"
               aria-label="Menu"
             >
               <svg className={`h-6 w-6 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -107,7 +107,7 @@ export default function DashboardLayout({
               className="absolute inset-0 bg-zinc-900/20 backdrop-blur-sm transition-opacity duration-200"
               onClick={() => setMobileMenuOpen(false)}
             />
-            <div className={`absolute top-[73px] left-0 right-0 border-b border-zinc-200 bg-white shadow-lg transition-all duration-200 ease-in-out origin-top ${
+            <div className={`absolute top-[73px] left-0 right-0 border-b border-white/20 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 shadow-lg transition-all duration-200 ease-in-out origin-top ${
               mobileMenuOpen 
                 ? 'opacity-100 scale-100 translate-y-0' 
                 : 'opacity-0 scale-95 -translate-y-4'
@@ -134,7 +134,7 @@ export default function DashboardLayout({
                 >
                   Novo orçamento
                 </MobileNavLink>
-                <div className="mt-4 pt-4 border-t border-zinc-200">
+                <div className="mt-4 pt-4 border-t border-white/20">
                   <MobileLogoutButton onClick={() => setMobileMenuOpen(false)} />
                 </div>
               </nav>
@@ -168,8 +168,8 @@ function MobileNavLink({
       onClick={onClick}
       className={`flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-all duration-150 hover:scale-[1.02] ${
         isActive
-          ? "bg-primary-100 text-primary-700"
-          : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+          ? "bg-white/20 text-white"
+          : "text-white/80 hover:bg-white/10 hover:text-white"
       }`}
     >
       {icon === "dashboard" ? (
@@ -211,10 +211,8 @@ function MobileLogoutButton({ onClick }: { onClick: () => void }) {
   
   return (
     <Button
-      variant="ghost"
-      size="md"
       onClick={handleLogout}
-      className="w-full justify-start text-base"
+      className="w-full justify-start text-base text-white/80 hover:bg-white/10 hover:text-white border-0 bg-transparent"
     >
       <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -247,8 +245,8 @@ function NavLink({
         collapsed ? "justify-center px-0" : ""
       } ${
         isActive
-          ? "bg-primary-100 text-primary-700"
-          : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+          ? "bg-white/20 text-white"
+          : "text-white/80 hover:bg-white/10 hover:text-white"
       }`}
     >
       {icon === "dashboard" ? (
@@ -288,7 +286,7 @@ function LogoutButton({ collapsed }: { collapsed: boolean }) {
       size="sm"
       onClick={() => signOut()}
       title={collapsed ? "Sair" : undefined}
-      className={`w-full ${collapsed ? "justify-center px-0" : "justify-start"}`}
+      className={`w-full text-white/80 hover:bg-white/10 hover:text-white ${collapsed ? "justify-center px-0" : "justify-start"}`}
     >
       <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

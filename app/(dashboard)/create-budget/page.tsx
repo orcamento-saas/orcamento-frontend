@@ -283,8 +283,8 @@ export default function CreateBudgetPage() {
   const [logoModalOpen, setLogoModalOpen] = useState(false);
   const [logoPendingDataUrl, setLogoPendingDataUrl] = useState<string | null>(null);
   const [logoPendingFileName, setLogoPendingFileName] = useState("");
-  const [previewFontColor, setPreviewFontColor] = useState("#18181b");
-  const [previewBgColor, setPreviewBgColor] = useState("#ffffff");
+  const [previewFontColor, setPreviewFontColor] = useState("#20b2aa");
+  const [previewBgColor, setPreviewBgColor] = useState("#e0f7fa");
   const [previewGridColor, setPreviewGridColor] = useState("#20b2aa");
   const [templateId, setTemplateId] = useState<LayoutId>("simples");
   const [layout, setLayout] = useState<BudgetLayoutConfig | null>(null);
@@ -595,7 +595,7 @@ export default function CreateBudgetPage() {
         {/* Formulário - mobile */}
         {activeView === 'form' && (
           <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 h-full">
-            <Card className="h-fit">
+            <Card className="h-fit bg-teal-50">
               <form onSubmit={handleSubmit} className="space-y-6">
               <Input
                 label="Título"
@@ -632,10 +632,10 @@ export default function CreateBudgetPage() {
                   />
                   <Button
                     type="button"
-                    variant="secondary"
                     size="sm"
                     isLoading={logoUploading}
                     onClick={() => fileInputRef.current?.click()}
+                    className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm"
                   >
                     Buscar do armazenamento
                   </Button>
@@ -920,13 +920,13 @@ export default function CreateBudgetPage() {
               )}
 
               <div className="flex gap-3 pt-2">
-                <Button type="submit" isLoading={loading} className="flex-1">
+                <Button type="submit" isLoading={loading} className="flex-1 bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">
                   Criar orçamento
                 </Button>
                 <Button
                   type="button"
-                  variant="secondary"
                   onClick={clearForm}
+                  className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm"
                 >
                   Limpar
                 </Button>
@@ -975,7 +975,7 @@ export default function CreateBudgetPage() {
           Informações do orçamento
         </h1>
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-        <Card className="shrink-0">
+        <Card className="shrink-0 bg-teal-50">
           <form onSubmit={handleSubmit} className="space-y-6">
           <Input
             label="Título"
@@ -1012,10 +1012,10 @@ export default function CreateBudgetPage() {
               />
               <Button
                 type="button"
-                variant="secondary"
                 size="sm"
                 isLoading={logoUploading}
                 onClick={() => fileInputRef.current?.click()}
+                className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm"
               >
                 Buscar do armazenamento
               </Button>
@@ -1300,13 +1300,13 @@ export default function CreateBudgetPage() {
           )}
 
           <div className="flex gap-3 pt-2">
-            <Button type="submit" isLoading={loading} className="flex-1">
+            <Button type="submit" isLoading={loading} className="flex-1 bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">
               Criar orçamento
             </Button>
             <Button
               type="button"
-              variant="secondary"
               onClick={clearForm}
+              className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm"
             >
               Limpar
             </Button>

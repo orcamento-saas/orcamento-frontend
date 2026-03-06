@@ -8,12 +8,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 
-const HIGHLIGHT_MESSAGES = [
-  "Crie orçamentos profissionais em poucos cliques e envie PDFs prontos para seus clientes.",
-  "Centralize todos os seus orçamentos em um só lugar e acompanhe o status de cada proposta.",
-  "Ganhe tempo com modelos prontos, layouts modernos e geração automática de PDF.",
-];
-
 type Mode = "login" | "register";
 
 export function AuthLoginPage() {
@@ -27,7 +21,28 @@ export function AuthLoginPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [highlightIndex, setHighlightIndex] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const pdfFeatures = [
+    {
+      title: "Crie Orçamentos Profissionais",
+      description: "Transforme suas propostas em PDFs elegantes e personalizáveis com a identidade da sua empresa.",
+      highlight: "Ilimitados",
+      value: "PDFs gerados"
+    },
+    {
+      title: "Gestão Completa de Clientes",
+      description: "Organize seus clientes, acompanhe o status de cada orçamento e nunca perca uma oportunidade.",
+      highlight: "100%",
+      value: "Organizado"
+    },
+    {
+      title: "Assinatura Digital Integrada",
+      description: "Seus clientes podem assinar os orçamentos diretamente no sistema, agilizando todo o processo.",
+      highlight: "Digital",
+      value: "Assinatura"
+    }
+  ];
 
   useEffect(() => {
     const qpMode = searchParams.get("mode");
@@ -37,11 +52,11 @@ export function AuthLoginPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    const id = window.setInterval(() => {
-      setHighlightIndex((prev) => (prev + 1) % HIGHLIGHT_MESSAGES.length);
-    }, 6000);
-    return () => window.clearInterval(id);
-  }, []);
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % pdfFeatures.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [pdfFeatures.length]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -91,131 +106,169 @@ export function AuthLoginPage() {
   const isLogin = mode === "login";
 
   return (
-    <div className="flex min-h-screen items-stretch bg-gradient-to-br from-sky-50 via-sky-100 to-indigo-100 px-4 py-10">
-      <div className="mx-auto flex w-full max-w-5xl overflow-hidden rounded-3xl bg-white/90 shadow-2xl ring-1 ring-sky-100 backdrop-blur">
-        {/* Lado esquerdo: informações da aplicação */}
-        <div className="relative hidden w-1/2 flex-col justify-between border-r border-sky-900/60 bg-slate-950 text-slate-50 px-10 py-12 md:flex">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.32),transparent_55%),radial-gradient(circle_at_bottom_right,rgba(129,140,248,0.32),transparent_55%)]" />
-          <div className="relative z-10 flex flex-col gap-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-200 shadow-sm backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              Plataforma de orçamentos em PDF
-            </div>
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Lado esquerdo: informações e recursos */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 relative">
+        <div className="flex flex-col justify-center items-center w-full px-8 py-16">
+          {/* Título no topo centralizado */}
+          <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
+            <h1 className="text-3xl font-bold text-white tracking-wide">
+              <span className="bg-gradient-to-r from-white to-green-200 bg-clip-text text-transparent">
+                Orçamento já
+              </span>
+            </h1>
+          </div>
 
-            <div className="space-y-4">
-              <h2 className="text-3xl font-semibold leading-tight text-slate-50 md:text-4xl">
-                Organize seus orçamentos com rapidez e profissionalismo.
-              </h2>
-              <p className="max-w-md text-sm text-slate-200">
-                Centralize propostas, acompanhe o status de cada cliente e gere PDFs
-                prontos para envio em poucos cliques.
-              </p>
-            </div>
-
-            <div className="mt-2 rounded-2xl border border-sky-500/30 bg-slate-900/70 p-4 shadow-sm backdrop-blur">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
-                Sobre a aplicação
-              </p>
-              <p className="mt-2 text-sm text-slate-100 transition-opacity duration-500">
-                {HIGHLIGHT_MESSAGES[highlightIndex]}
-              </p>
-              <div className="mt-4 flex gap-1.5">
-                {HIGHLIGHT_MESSAGES.map((_, index) => (
-                  // eslint-disable-next-line react/no-array-index-key
-                  <span
-                    key={index}
-                    className={`h-1.5 flex-1 rounded-full bg-sky-900/60 ${
-                      index === highlightIndex ? "bg-sky-400" : ""
-                    }`}
-                  />
-                ))}
+          {/* Main content - centralizado */}
+          <div className="max-w-md mx-auto text-center">
+            {/* Feature card animado */}
+            <div className="bg-gray-50 rounded-2xl p-8 mb-8 min-h-[280px] flex flex-col justify-center transition-all duration-500">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-3">
+                  {pdfFeatures[currentSlide].title}
+                </h3>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  {pdfFeatures[currentSlide].description}
+                </p>
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span className="text-gray-600 text-sm">{pdfFeatures[currentSlide].value}</span>
+                  </div>
+                  <span className="text-gray-800 font-semibold">{pdfFeatures[currentSlide].highlight}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="relative z-10 mt-10 text-xs text-slate-400">
-            <p>
-              © {new Date().getFullYear()} PDF Orçamento. Todos os direitos
-              reservados.
-            </p>
+            {/* Descrição da aplicação */}
+            <div className="mb-6">
+              <p className="text-white/80 leading-relaxed text-lg">
+                A solução completa para geração de PDFs profissionais e gestão de orçamentos
+              </p>
+            </div>
+
+            {/* Dots indicator */}
+            <div className="flex justify-center space-x-2 mt-6">
+              {pdfFeatures.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index === currentSlide ? 'bg-white' : 'bg-white/40'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Lado direito: login / criação de conta */}
-        <div className="flex w-full items-center justify-center px-6 py-8 md:w-1/2 md:px-10">
-          <div className="w-full max-w-md">
-            <div className="mb-6">
-              <h1 className="text-xl font-semibold tracking-tight text-slate-900">
-                {isLogin ? "Entre na sua conta" : "Crie sua conta"}
-              </h1>
-            </div>
-            <p className="mb-5 text-sm text-slate-500">
-              {isLogin
-                ? "Digite suas credenciais para acessar o painel."
-                : "Preencha os dados para começar a usar a plataforma."}
-            </p>
-
-            <Card className="border border-slate-200 shadow-sm">
-              <form
-                onSubmit={isLogin ? handleLogin : handleRegister}
-                className="space-y-4"
+      {/* Lado direito: formulário de login */}
+      <div className="flex w-full lg:w-1/2 flex-col justify-center px-8 py-12 lg:px-16">
+        <div className="mx-auto w-full max-w-sm">
+          {/* Título */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {isLogin ? "Entrar" : "Criar conta"}
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              {isLogin 
+                ? "Não tem uma conta? " 
+                : "Já tem uma conta? "
+              }
+              <button
+                type="button"
+                onClick={() => setMode(isLogin ? "register" : "login")}
+                className="font-medium text-teal-600 hover:text-teal-500"
               >
-                <Input
-                  label="E-mail"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="voce@empresa.com"
-                />
-                <Input
-                  label="Senha"
-                  type="password"
-                  autoComplete={isLogin ? "current-password" : "new-password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder={isLogin ? "Sua senha" : "Mínimo 6 caracteres"}
-                />
-                {!isLogin && (
-                  <Input
-                    label="Confirmar senha"
-                    type="password"
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    placeholder="Repita a senha"
-                  />
-                )}
-                {error && (
-                  <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
-                    {error}
-                  </p>
-                )}
-                <Button
-                  type="submit"
-                  className="w-full"
-                  size="lg"
-                  isLoading={loading}
-                >
-                  {isLogin ? "Entrar" : "Cadastrar"}
-                </Button>
-              </form>
-
-              <p className="mt-4 text-center text-sm text-slate-600">
-                {isLogin ? "Ainda não tem conta?" : "Já tem conta?"}{" "}
-                <button
-                  type="button"
-                  onClick={() => setMode(isLogin ? "register" : "login")}
-                  className="font-medium text-primary-600 hover:text-primary-700"
-                >
-                  {isLogin ? "Criar conta" : "Entrar"}
-                </button>
-              </p>
-            </Card>
+                {isLogin ? "Criar agora" : "Entrar agora"}
+              </button>
+            </p>
           </div>
+
+          {/* Formulário */}
+          <form onSubmit={isLogin ? handleLogin : handleRegister} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                E-mail
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="exemplo@email.com"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Senha
+              </label>
+              <input
+                id="password"
+                type="password"
+                autoComplete={isLogin ? "current-password" : "new-password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="••••••"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              />
+            </div>
+
+            {!isLogin && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirmar Senha
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  placeholder="••••••"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
+              </div>
+            )}
+
+            {isLogin && (
+              <div className="flex items-center justify-between text-sm">
+                <label className="flex items-center">
+                  <input type="checkbox" className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                  <span className="ml-2 text-gray-600">Lembrar de mim</span>
+                </label>
+                <button type="button" className="text-teal-600 hover:text-teal-500">
+                  Esqueceu a senha?
+                </button>
+              </div>
+            )}
+
+            {error && (
+              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 border border-red-200">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-teal-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading 
+                ? (isLogin ? "Entrando..." : "Criando conta...") 
+                : (isLogin ? "Entrar" : "Criar conta")
+              }
+            </button>
+          </form>
         </div>
       </div>
     </div>

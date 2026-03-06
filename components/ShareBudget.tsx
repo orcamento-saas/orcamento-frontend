@@ -45,26 +45,26 @@ export function ShareBudget({ budgetId, onClose }: ShareBudgetProps) {
             value={url}
             className="flex-1 bg-zinc-50 text-sm"
           />
-          <Button variant="secondary" onClick={copyLink}>
+          <Button onClick={copyLink} className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">
             {copied ? "Copiado!" : "Copiar"}
           </Button>
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
         <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="secondary" size="sm">
+          <Button size="sm" className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">
             WhatsApp
           </Button>
         </a>
         <a href={mailtoUrl}>
-          <Button variant="secondary" size="sm">
+          <Button size="sm" className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">
             Enviar por e-mail
           </Button>
         </a>
       </div>
       {onClose && (
         <div className="pt-2">
-          <Button variant="ghost" onClick={onClose}>
+          <Button onClick={onClose} className="bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 shadow-sm">
             Fechar
           </Button>
         </div>

@@ -159,25 +159,25 @@ export default function DashboardBudgetPage() {
             {budget.pdfUrl && (
               <>
                 <a href={budget.pdfUrl} target="_blank" rel="noopener noreferrer">
-                  <Button size="sm" className="h-8 px-2 text-xs sm:px-4 sm:text-sm">Ver PDF</Button>
+                  <Button size="sm" className="h-8 px-2 text-xs sm:px-4 sm:text-sm bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">Ver PDF</Button>
                 </a>
                 <a href={budget.pdfUrl} download target="_blank" rel="noopener noreferrer">
-                  <Button size="sm" className="h-8 px-2 text-xs sm:px-4 sm:text-sm">Baixar</Button>
+                  <Button size="sm" className="h-8 px-2 text-xs sm:px-4 sm:text-sm bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">Baixar</Button>
                 </a>
               </>
             )}
             {budget.status === "DRAFT" && (
-              <Button size="sm" isLoading={generatingPdf} onClick={handleGeneratePdf} className="h-8 px-2 text-xs sm:px-4 sm:text-sm">
+              <Button size="sm" isLoading={generatingPdf} onClick={handleGeneratePdf} className="h-8 px-2 text-xs sm:px-4 sm:text-sm bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">
                 Gerar PDF
               </Button>
             )}
-            <Button size="sm" onClick={() => setShareOpen(true)} className="h-8 px-2 text-xs sm:px-4 sm:text-sm">
+            <Button size="sm" onClick={() => setShareOpen(true)} className="h-8 px-2 text-xs sm:px-4 sm:text-sm bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">
               Compartilhar
             </Button>
             <Button
               size="sm"
               onClick={() => setDeleteOpen(true)}
-              className="h-8 px-2 text-xs sm:px-4 sm:text-sm"
+              className="h-8 px-2 text-xs sm:px-4 sm:text-sm bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 shadow-sm"
             >
               Excluir
             </Button>
