@@ -58,6 +58,122 @@ function ColorPaletteRow({
   );
 }
 
+// Componentes para mobile
+function MobileColorDropdown({
+  label,
+  value,
+  onChange,
+  colors,
+  isOpen,
+  onToggle,
+}: {
+  label: string;
+  value: string;
+  onChange: (hex: string) => void;
+  colors: string[];
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="relative">
+      <label className="mb-1 block text-center text-xs font-medium text-zinc-700">{label}</label>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full h-8 rounded-md border border-zinc-300 shadow-sm flex items-center justify-end px-2 transition-all duration-200"
+        style={{ backgroundColor: value, minWidth: '60px' }}
+      >
+        <svg className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} style={{ color: value === "#ffffff" ? "#000" : "#fff" }} fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      </button>
+      
+      <div className={`absolute top-full left-0 right-0 z-10 mt-1 bg-white border border-zinc-300 rounded-md shadow-lg p-2 transition-all duration-200 ease-in-out origin-top ${
+        isOpen 
+          ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' 
+          : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
+      }`} style={{ minWidth: '60px' }}>
+        <div className="flex flex-col gap-1">
+          {colors.map((hex) => (
+            <button
+              key={hex}
+              type="button"
+              onClick={() => {
+                onChange(hex);
+                onToggle();
+              }}
+              className={`h-6 w-full rounded border-2 transition-all duration-150 hover:scale-105 ${
+                value.toLowerCase() === hex.toLowerCase()
+                  ? "border-zinc-900 ring-1 ring-zinc-400"
+                  : "border-zinc-300 hover:border-zinc-400"
+              }`}
+              style={{ backgroundColor: hex }}
+              title={hex}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MobileTemplateDropdown({
+  label,
+  value,
+  onChange,
+  options,
+  isOpen,
+  onToggle,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const selectedOption = options.find(opt => opt.value === value) || options[0];
+  
+  return (
+    <div className="relative">
+      <label className="mb-1 block text-center text-xs font-medium text-zinc-700">{label}</label>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="h-8 rounded-md border border-zinc-300 bg-white shadow-sm flex items-center justify-between px-2 transition-all duration-200 hover:border-zinc-400"
+        style={{ width: '110px' }}
+      >
+        <span className="text-xs text-zinc-700 truncate">{selectedOption.label}</span>
+        <svg className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      </button>
+      
+      <div className={`absolute top-full left-0 z-10 mt-1 bg-white border border-zinc-300 rounded-md shadow-lg transition-all duration-200 ease-in-out origin-top ${
+        isOpen 
+          ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' 
+          : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
+      }`} style={{ width: '110px' }}>
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => {
+              onChange(option.value);
+              onToggle();
+            }}
+            className={`w-full px-3 py-2 text-left text-xs transition-all duration-150 hover:bg-zinc-50 first:rounded-t-md last:rounded-b-md ${
+              value === option.value ? "bg-zinc-100 font-medium" : ""
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -172,10 +288,52 @@ export default function CreateBudgetPage() {
   const [previewGridColor, setPreviewGridColor] = useState("#20b2aa");
   const [templateId, setTemplateId] = useState<LayoutId>("simples");
   const [layout, setLayout] = useState<BudgetLayoutConfig | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<'form' | 'preview'>('form');
   const totalCalculado = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
     0
   );
+
+  // Arrays de cores para os dropdowns
+  const fontColors = [
+    "#3b82f6",
+    "#20b2aa", 
+    "#ef4444",
+    "#f59e0b",
+    "#6b7280",
+    "#8b5cf6",
+    "#000000",
+    "#ffffff",
+  ];
+
+  const backgroundColors = [
+    "#dbeafe",
+    "#e0f7fa",
+    "#fee2e2", 
+    "#fef9c3",
+    "#f3f4f6",
+    "#ede9fe",
+    "#e5e5e5",
+    "#ffffff",
+  ];
+
+  const gridColors = [
+    "#3b82f6",
+    "#20b2aa",
+    "#ef4444", 
+    "#f59e0b",
+    "#6b7280",
+    "#8b5cf6",
+    "#000000",
+    "#ffffff",
+  ];
+
+  const templateOptions = [
+    { value: "simples", label: "Simples" },
+    { value: "moderno", label: "Moderno" },
+    { value: "profissional", label: "Profissional" },
+  ];
 
   // Carrega o layout do orçamento sempre que o template selecionado mudar
   useEffect(() => {
@@ -255,6 +413,26 @@ export default function CreateBudgetPage() {
       setError("Não foi possível ler o arquivo. Tente outra imagem.");
       setLogoUploading(false);
     }
+  }
+
+  function clearForm() {
+    setTitle("");
+    setDescription("");
+    setCompanyName("");
+    setCompanyAddress("");
+    setCompanyPhone("");
+    setCompanyCnpj("");
+    setClientName("");
+    setClientEmail("");
+    setClientPhone("");
+    setClientAddress("");
+    setDocumentDate(getTodayISO());
+    setValidityDays(15);
+    setObservation("");
+    setItems([{ ...EMPTY_ITEM }]);
+    setError(null);
+    setCompanyLogoUrl("");
+    setLogoFileName("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -345,10 +523,452 @@ export default function CreateBudgetPage() {
   }
 
   const inputBase =
-    "w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1";
+    "w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1";
 
   return (
-    <div className="flex min-h-0 flex-1 w-full gap-6 overflow-hidden">
+    <>
+      {/* Layout Mobile com dropdowns no topo - apenas mobile */}
+      <div className="flex lg:hidden min-h-0 flex-1 w-full flex-col overflow-hidden h-screen">
+        {/* Título - mobile */}
+        <h1 className="mb-2 pt-0 mt-0 text-center text-lg font-semibold text-zinc-800 shrink-0">
+          Novo orçamento
+        </h1>
+        
+        {/* Dropdowns horizontais no topo - sempre visíveis */}
+        <div className="shrink-0 mb-2 p-4 bg-white border-b border-zinc-200 rounded-lg mx-2 shadow-sm">
+          <div className="flex gap-3 justify-center">
+            <MobileColorDropdown
+              label="Fonte"
+              value={previewFontColor}
+              onChange={setPreviewFontColor}
+              colors={fontColors}
+              isOpen={openDropdown === 'font'}
+              onToggle={() => setOpenDropdown(openDropdown === 'font' ? null : 'font')}
+            />
+            <MobileColorDropdown
+              label={templateId === "moderno" ? "Fundo" : "Grade"}
+              value={previewGridColor}
+              onChange={setPreviewGridColor}
+              colors={gridColors}
+              isOpen={openDropdown === 'grid'}
+              onToggle={() => setOpenDropdown(openDropdown === 'grid' ? null : 'grid')}
+            />
+            <MobileColorDropdown
+              label={templateId === "moderno" ? "Grade" : "Fundo"}
+              value={previewBgColor}
+              onChange={setPreviewBgColor}
+              colors={backgroundColors}
+              isOpen={openDropdown === 'bg'}
+              onToggle={() => setOpenDropdown(openDropdown === 'bg' ? null : 'bg')}
+            />
+            <MobileTemplateDropdown
+              label="Template"
+              value={templateId}
+              onChange={(value) => setTemplateId(value as LayoutId)}
+              options={templateOptions}
+              isOpen={openDropdown === 'template'}
+              onToggle={() => setOpenDropdown(openDropdown === 'template' ? null : 'template')}
+            />
+          </div>
+        </div>
+
+        {/* Botões de navegação - mobile */}
+        <div className="mb-4 flex gap-2 px-4 shrink-0">
+          <Button
+            type="button"
+            variant={activeView === 'form' ? 'primary' : 'secondary'}
+            onClick={() => setActiveView('form')}
+            className="flex-1"
+          >
+            Formulário
+          </Button>
+          <Button
+            type="button"
+            variant={activeView === 'preview' ? 'primary' : 'secondary'}
+            onClick={() => setActiveView('preview')}
+            className="flex-1"
+          >
+            Prévia
+          </Button>
+        </div>
+
+        {/* Formulário - mobile */}
+        {activeView === 'form' && (
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 h-full">
+            <Card className="h-fit">
+              <form onSubmit={handleSubmit} className="space-y-6">
+              <Input
+                label="Título"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                placeholder="Ex: Orçamento Site Institucional"
+              />
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                  Descrição (opcional)
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                  className={inputBase}
+                  placeholder="Detalhes do serviço ou escopo"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                  Logo da empresa (opcional)
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    isLoading={logoUploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Buscar do armazenamento
+                  </Button>
+                  <span className="text-sm text-zinc-500">ou</span>
+                  {companyLogoUrl.startsWith("data:") ? (
+                    <input
+                      type="text"
+                      readOnly
+                      value={logoFileName}
+                      className={`${inputBase} min-w-[200px] flex-1 bg-zinc-50`}
+                      placeholder="Nome do arquivo"
+                    />
+                  ) : (
+                    <input
+                      type="url"
+                      value={companyLogoUrl}
+                      onChange={(e) => {
+                        setCompanyLogoUrl(e.target.value);
+                        setLogoFileName("");
+                      }}
+                      className={`${inputBase} min-w-[200px] flex-1`}
+                      placeholder="Colar URL da logo"
+                    />
+                  )}
+                </div>
+                {companyLogoUrl && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <img
+                      src={companyLogoUrl}
+                      alt="Logo"
+                      className="h-12 w-auto rounded border border-zinc-200 object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCompanyLogoUrl("");
+                        setLogoFileName("");
+                      }}
+                      className="text-sm text-red-600 hover:text-red-700"
+                    >
+                      Remover logo
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <LogoEditorModal
+                isOpen={logoModalOpen}
+                onClose={() => {
+                  setLogoModalOpen(false);
+                  setLogoPendingDataUrl(null);
+                }}
+                imageDataUrl={logoPendingDataUrl}
+                onConfirm={(resizedDataUrl) => {
+                  setCompanyLogoUrl(resizedDataUrl);
+                  setLogoFileName(logoPendingFileName);
+                  setLogoModalOpen(false);
+                  setLogoPendingDataUrl(null);
+                }}
+              />
+
+              <Input
+                label="Nome da empresa"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Sua empresa"
+              />
+
+              <div>
+                <h3 className="mb-3 text-sm font-semibold text-zinc-800">
+                  Dados do cliente
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                      Data
+                    </label>
+                    <input
+                      type="date"
+                      value={documentDate}
+                      readOnly
+                      className={`${inputBase} bg-zinc-50 cursor-not-allowed`}
+                    />
+                  </div>
+                  <Input
+                    label="Nome"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="Nome do cliente"
+                    required
+                  />
+                  <Input
+                    label="E-mail"
+                    type="email"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    placeholder="cliente@email.com"
+                  />
+                  <Input
+                    label="Telefone"
+                    value={clientPhone}
+                    onChange={(e) => setClientPhone(formatPhone(e.target.value))}
+                    placeholder="(00) 00000-0000"
+                  />
+                  <Input
+                    label="Endereço do cliente"
+                    value={clientAddress}
+                    onChange={(e) => setClientAddress(e.target.value)}
+                    placeholder="Endereço completo do cliente"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="mb-3 text-sm font-semibold text-zinc-800">
+                  Dados do serviço
+                </h3>
+                <div className="space-y-4">
+                  {items.map((item, i) => (
+                    <div key={i} className="border border-zinc-200 rounded-lg p-4">
+                      <div className="space-y-3">
+                        {/* Descrição - largura total */}
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-600 mb-1">
+                            Descrição
+                          </label>
+                          <input
+                            value={item.description}
+                            onChange={(e) =>
+                              updateItem(i, "description", e.target.value)
+                            }
+                            className={`${inputBase} py-2`}
+                            placeholder="Descrição do item"
+                          />
+                        </div>
+                        
+                        {/* Quantidade e Valor - lado a lado */}
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-zinc-600 mb-1">
+                              Qtd
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={item.quantity || ""}
+                              onChange={(e) =>
+                                updateItem(
+                                  i,
+                                  "quantity",
+                                  parseInt(e.target.value, 10) || 0
+                                )
+                              }
+                              className={`${inputBase} py-2`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-zinc-600 mb-1">
+                              Valor un.
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              value={item.unitPrice || ""}
+                              onChange={(e) =>
+                                updateItem(
+                                  i,
+                                  "unitPrice",
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              className={`${inputBase} py-2`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-zinc-600 mb-1">
+                              Subtotal
+                            </label>
+                            <div className="py-2.5 px-4 bg-zinc-50 rounded-xl border border-zinc-200 text-sm text-zinc-600">
+                              {formatCurrency(item.quantity * item.unitPrice)}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Botão remover */}
+                        {items.length > 1 && (
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => removeItem(i)}
+                              className="text-sm text-red-600 hover:text-red-700 px-2 py-1"
+                            >
+                              Remover
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700"
+                >
+                  + Adicionar mais itens
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-6">
+                <div className="min-w-[120px]">
+                  <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                    Validade (dias)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={validityDays}
+                    onChange={(e) =>
+                      setValidityDays(Math.max(1, parseInt(e.target.value, 10) || 1))
+                    }
+                    className={inputBase}
+                    placeholder="Ex: 7"
+                  />
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-zinc-700">
+                    Total:{" "}
+                  </span>
+                  <span className="text-lg font-semibold text-zinc-900">
+                    {formatCurrency(totalCalculado)}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                  Observação (opcional)
+                </label>
+                <textarea
+                  value={observation}
+                  onChange={(e) => setObservation(e.target.value)}
+                  rows={3}
+                  className={inputBase}
+                  placeholder="Observações adicionais"
+                />
+              </div>
+
+              <div>
+                <h3 className="mb-3 text-sm font-semibold text-zinc-800">
+                  Dados da empresa
+                </h3>
+                <div className="space-y-3">
+                  <Input
+                    label="Endereço"
+                    value={companyAddress}
+                    onChange={(e) => setCompanyAddress(e.target.value)}
+                    placeholder="Endereço completo"
+                  />
+                  <Input
+                    label="Telefone"
+                    value={companyPhone}
+                    onChange={(e) => setCompanyPhone(formatPhone(e.target.value))}
+                    placeholder="(00) 00000-0000"
+                  />
+                  <Input
+                    label="CNPJ"
+                    value={companyCnpj}
+                    onChange={(e) => setCompanyCnpj(formatCnpj(e.target.value))}
+                    placeholder="00.000.000/0000-00"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  {error}
+                </p>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" isLoading={loading} className="flex-1">
+                  Criar orçamento
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={clearForm}
+                >
+                  Limpar
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+        )}
+
+        {/* Prévia - mobile */}
+        {activeView === 'preview' && (
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 h-full">
+            {layout && (
+              <BudgetPdfPreview
+                companyLogoUrl={companyLogoUrl}
+                companyName={companyName}
+                companyAddress={companyAddress}
+                companyPhone={companyPhone}
+                companyCnpj={companyCnpj}
+                documentDate={documentDate}
+                clientName={clientName}
+                clientPhone={clientPhone}
+                clientEmail={clientEmail}
+                clientAddress={clientAddress}
+                title={title}
+                items={items}
+                total={items.reduce((acc, item) => acc + item.quantity * item.unitPrice, 0)}
+                validityDays={validityDays}
+                observation={observation}
+                fontColor={previewFontColor}
+                backgroundColor={previewBgColor}
+                gridColor={previewGridColor}
+                templateId={templateId}
+                layout={layout}
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Layout Desktop (mantido como original) - apenas lg+ */}
+      <div className="hidden lg:flex min-h-0 flex-1 w-full gap-6 overflow-hidden">
       {/* Coluna esquerda: título fixo + barra de rolagem apenas nos campos */}
       <div className="flex min-h-0 min-w-0 max-w-lg flex-1 flex-col overflow-hidden">
         <h1 className="mb-3 shrink-0 text-center text-lg font-semibold text-zinc-800">
@@ -513,39 +1133,31 @@ export default function CreateBudgetPage() {
             <h3 className="mb-3 text-sm font-semibold text-zinc-800">
               Dados do serviço
             </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[500px] border-collapse">
-                <thead>
-                  <tr className="border-b border-zinc-200">
-                    <th className="pb-2 text-left text-sm font-medium text-zinc-700">
-                      Descrição
-                    </th>
-                    <th className="w-20 pb-2 text-left text-sm font-medium text-zinc-700">
-                      Qtd
-                    </th>
-                    <th className="w-28 pb-2 text-left text-sm font-medium text-zinc-700">
-                      Valor un.
-                    </th>
-                    <th className="w-24 pb-2 text-right text-sm font-medium text-zinc-700">
-                      Subtotal
-                    </th>
-                    <th className="w-16" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, i) => (
-                    <tr key={i} className="border-b border-zinc-100">
-                      <td className="py-2">
-                        <input
-                          value={item.description}
-                          onChange={(e) =>
-                            updateItem(i, "description", e.target.value)
-                          }
-                          className={`${inputBase} py-2`}
-                          placeholder="Descrição do item"
-                        />
-                      </td>
-                      <td className="py-2">
+            <div className="space-y-4">
+              {items.map((item, i) => (
+                <div key={i} className="border border-zinc-200 rounded-lg p-4">
+                  <div className="space-y-3">
+                    {/* Descrição - largura total */}
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-600 mb-1">
+                        Descrição
+                      </label>
+                      <input
+                        value={item.description}
+                        onChange={(e) =>
+                          updateItem(i, "description", e.target.value)
+                        }
+                        className={`${inputBase} py-2`}
+                        placeholder="Descrição do item"
+                      />
+                    </div>
+                    
+                    {/* Quantidade e Valor - lado a lado */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-600 mb-1">
+                          Qtd
+                        </label>
                         <input
                           type="number"
                           min={0}
@@ -560,8 +1172,11 @@ export default function CreateBudgetPage() {
                           }
                           className={`${inputBase} py-2`}
                         />
-                      </td>
-                      <td className="py-2">
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-600 mb-1">
+                          Valor un.
+                        </label>
                         <input
                           type="number"
                           min={0}
@@ -576,25 +1191,32 @@ export default function CreateBudgetPage() {
                           }
                           className={`${inputBase} py-2`}
                         />
-                      </td>
-                      <td className="py-2 text-right text-sm text-zinc-600">
-                        {formatCurrency(item.quantity * item.unitPrice)}
-                      </td>
-                      <td className="py-2">
-                        {items.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeItem(i)}
-                            className="text-sm text-red-600 hover:text-red-700"
-                          >
-                            Remover
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-600 mb-1">
+                          Subtotal
+                        </label>
+                        <div className="py-2.5 px-4 bg-zinc-50 rounded-xl border border-zinc-200 text-sm text-zinc-600">
+                          {formatCurrency(item.quantity * item.unitPrice)}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Botão remover */}
+                    {items.length > 1 && (
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => removeItem(i)}
+                          className="text-sm text-red-600 hover:text-red-700 px-2 py-1"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
             <button
               type="button"
@@ -684,9 +1306,9 @@ export default function CreateBudgetPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => router.back()}
+              onClick={clearForm}
             >
-              Voltar
+              Limpar
             </Button>
           </div>
         </form>
@@ -736,53 +1358,26 @@ export default function CreateBudgetPage() {
               label="Fonte"
               value={previewFontColor}
               onChange={setPreviewFontColor}
-              colors={[
-                "#3b82f6",
-                "#20b2aa",
-                "#ef4444",
-                "#f59e0b",
-                "#6b7280",
-                "#8b5cf6",
-                "#000000",
-                "#ffffff",
-              ]}
-            />
-            <ColorPaletteRow
-              label={templateId === "moderno" ? "Fundo" : "Grade"}
-              value={previewGridColor}
-              onChange={setPreviewGridColor}
-              colors={[
-                "#3b82f6",
-                "#20b2aa",
-                "#ef4444",
-                "#f59e0b",
-                "#6b7280",
-                "#8b5cf6",
-                "#000000",
-                "#ffffff",
-              ]}
-            />
-            <ColorPaletteRow
-              label={templateId === "moderno" ? "Grade" : "Fundo"}
-              value={previewBgColor}
-              onChange={setPreviewBgColor}
-              colors={[
-                "#dbeafe",
-                "#e0f7fa",
-                "#fee2e2",
-                "#fef9c3",
-                "#f3f4f6",
-                "#ede9fe",
-                "#e5e5e5",
-                "#ffffff",
-              ]}
-            />
+                colors={fontColors}
+              />
+              <ColorPaletteRow
+                label={templateId === "moderno" ? "Fundo" : "Grade"}
+                value={previewGridColor}
+                onChange={setPreviewGridColor}
+                colors={gridColors}
+              />
+              <ColorPaletteRow
+                label={templateId === "moderno" ? "Grade" : "Fundo"}
+                value={previewBgColor}
+                onChange={setPreviewBgColor}
+                colors={backgroundColors}
+              />
 
-            <div className="mt-2 border-t border-zinc-200 pt-3">
-              <p className="mb-2 text-center text-sm font-medium text-zinc-700">
-                Template
-              </p>
-              <div className="space-y-1 text-sm text-zinc-700">
+              <div className="mt-2 border-t border-zinc-200 pt-3">
+                <p className="mb-2 text-center text-sm font-medium text-zinc-700">
+                  Template
+                </p>
+                <div className="space-y-1 text-sm text-zinc-700">
                 <label className="flex items-center gap-2">
                   <input
                     type="radio"
@@ -822,5 +1417,6 @@ export default function CreateBudgetPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

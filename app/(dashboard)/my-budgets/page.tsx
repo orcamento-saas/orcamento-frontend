@@ -53,7 +53,7 @@ function matchesSearch(b: Budget, search: string): boolean {
 }
 
 const btnBase =
-  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 [&_svg]:size-5 [&_svg]:shrink-0";
+  "inline-flex shrink-0 items-center justify-center rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 h-7 w-7 sm:h-8 sm:w-8 [&_svg]:size-4 [&_svg]:shrink-0 sm:[&_svg]:size-5";
 const btnPurple =
   "bg-violet-600 text-white hover:bg-violet-700 focus-visible:ring-violet-500";
 const btnBlue =
@@ -183,30 +183,30 @@ export default function MyBudgetsPage() {
           )}
 
           {filteredBudgets.length > 0 && (
-            <ul className="space-y-4">
+            <ul className="space-y-2 sm:space-y-4">
               {filteredBudgets.map((b) => (
                 <li key={b.id}>
-                  <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-3 sm:gap-4 rounded-lg border border-zinc-200 bg-white p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                         <StatusBadge status={b.status} />
                         {!b.signedPdfUrl && (
-                          <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                          <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800 sm:px-2">
                             Não assinado
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 font-semibold text-zinc-900">
+                      <p className="mt-1 text-sm font-semibold text-zinc-900 sm:text-base sm:font-semibold">
                         {b.clientName ?? "—"}
                       </p>
-                      <p className="mt-1 text-sm text-zinc-600">
+                      <p className="mt-0.5 text-xs text-zinc-600 sm:mt-1 sm:text-sm">
                         {b.title ?? "—"}
                       </p>
-                      <p className="mt-1 text-sm text-zinc-700">
+                      <p className="mt-0.5 text-xs text-zinc-700 sm:mt-1 sm:text-sm">
                         Total {formatCurrency(b.value)} - {getDisplayDate(b)}
                       </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                       {b.pdfUrl && (
                         <>
                           <a
@@ -256,7 +256,7 @@ export default function MyBudgetsPage() {
                       <Button
                         variant="danger"
                         size="sm"
-                        className="h-8 w-8 shrink-0 p-0 [&_svg]:size-5 [&_svg]:shrink-0"
+                        className="h-7 w-7 shrink-0 p-0 sm:h-8 sm:w-8 [&_svg]:size-4 [&_svg]:shrink-0 sm:[&_svg]:size-5"
                         onClick={() => setDeleteId(b.id)}
                         title="Excluir"
                       >
