@@ -56,6 +56,14 @@ export default function DashboardBudgetPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [layout, setLayout] = useState<BudgetLayoutConfig | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 640);
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (!accessToken || !id) return;
@@ -137,7 +145,7 @@ export default function DashboardBudgetPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2 text-sm text-zinc-500">
+      <div className="mb-3 flex shrink-0 flex-col gap-3 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/dashboard" className="hover:text-zinc-700">
             Dashboard
@@ -145,63 +153,66 @@ export default function DashboardBudgetPage() {
           <span>/</span>
           <span className="text-zinc-900">{budget.title}</span>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:justify-center">
           <StatusBadge status={budget.status} />
-          {budget.pdfUrl && (
-            <>
-              <a href={budget.pdfUrl} target="_blank" rel="noopener noreferrer">
-                <Button variant="secondary" size="sm">Ver PDF</Button>
-              </a>
-              <a href={budget.pdfUrl} download target="_blank" rel="noopener noreferrer">
-                <Button variant="secondary" size="sm">Baixar PDF</Button>
-              </a>
-            </>
-          )}
-          {budget.status === "DRAFT" && (
-            <Button size="sm" isLoading={generatingPdf} onClick={handleGeneratePdf}>
-              Gerar PDF
+          <div className="flex items-center justify-center gap-1 sm:gap-2">
+            {budget.pdfUrl && (
+              <>
+                <a href={budget.pdfUrl} target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" className="h-8 px-2 text-xs sm:px-4 sm:text-sm">Ver PDF</Button>
+                </a>
+                <a href={budget.pdfUrl} download target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" className="h-8 px-2 text-xs sm:px-4 sm:text-sm">Baixar</Button>
+                </a>
+              </>
+            )}
+            {budget.status === "DRAFT" && (
+              <Button size="sm" isLoading={generatingPdf} onClick={handleGeneratePdf} className="h-8 px-2 text-xs sm:px-4 sm:text-sm">
+                Gerar PDF
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setShareOpen(true)} className="h-8 px-2 text-xs sm:px-4 sm:text-sm">
+              Compartilhar
             </Button>
-          )}
-          <Button variant="secondary" size="sm" onClick={() => setShareOpen(true)}>
-            Compartilhar
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-red-600 hover:bg-red-50"
-            onClick={() => setDeleteOpen(true)}
-          >
-            Excluir
-          </Button>
+            <Button
+              size="sm"
+              onClick={() => setDeleteOpen(true)}
+              className="h-8 px-2 text-xs sm:px-4 sm:text-sm"
+            >
+              Excluir
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 p-4">
+      <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-zinc-200 bg-zinc-100 p-1 sm:p-4">
         {layout && (
-          <BudgetPdfPreview
-            companyLogoUrl={budget.companyLogoUrl ?? ""}
-            companyName={budget.companyName ?? ""}
-            companyAddress={budget.companyAddress ?? ""}
-            companyPhone={budget.companyPhone ?? ""}
-            companyCnpj={budget.companyCnpj ?? ""}
-            documentDate={documentDate}
-            clientName={budget.clientName ?? ""}
-            clientPhone={budget.clientPhone ?? ""}
-            clientEmail={budget.clientEmail ?? ""}
-            clientAddress={budget.clientAddress ?? ""}
-            title={budget.title}
-            items={budget.items ?? []}
-            total={budget.value}
-            validityDays={validityDays}
-            observation={budget.observation ?? ""}
-            fontColor={budget.fontColor ?? "#18181b"}
-            backgroundColor={budget.backgroundColor ?? "#ffffff"}
-            gridColor={budget.gridColor ?? "#000000"}
-            templateId={budget.templateId ?? "simples"}
-            minScale={1.35}
-            showLens={false}
-            layout={layout}
-          />
+          <div className="h-full min-h-[300px] w-full overflow-hidden">
+            <BudgetPdfPreview
+              companyLogoUrl={budget.companyLogoUrl ?? ""}
+              companyName={budget.companyName ?? ""}
+              companyAddress={budget.companyAddress ?? ""}
+              companyPhone={budget.companyPhone ?? ""}
+              companyCnpj={budget.companyCnpj ?? ""}
+              documentDate={documentDate}
+              clientName={budget.clientName ?? ""}
+              clientPhone={budget.clientPhone ?? ""}
+              clientEmail={budget.clientEmail ?? ""}
+              clientAddress={budget.clientAddress ?? ""}
+              title={budget.title}
+              items={budget.items ?? []}
+              total={budget.value}
+              validityDays={validityDays}
+              observation={budget.observation ?? ""}
+              fontColor={budget.fontColor ?? "#18181b"}
+              backgroundColor={budget.backgroundColor ?? "#ffffff"}
+              gridColor={budget.gridColor ?? "#000000"}
+              templateId={budget.templateId ?? "simples"}
+              minScale={isMobile ? 0.3 : 0.6}
+              showLens={false}
+              layout={layout}
+            />
+          </div>
         )}
       </div>
 
