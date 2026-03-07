@@ -106,7 +106,33 @@ export function AuthLoginPage() {
   const isLogin = mode === "login";
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-[100svh] flex-col bg-gray-50 overflow-hidden lg:min-h-screen lg:flex-row">
+      {/* Topo mobile: informações */}
+      <div className="flex h-[44svh] flex-col justify-center bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 px-5 py-6 text-center text-white lg:hidden">
+        <h1 className="text-3xl font-bold tracking-tight">Orçamento já</h1>
+        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-white/85">
+          A solução completa para geração de PDFs profissionais e gestão de orçamentos
+        </p>
+
+        <div className="mt-5 rounded-xl bg-white/12 p-4 backdrop-blur-sm">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/70">Recursos</p>
+          <p key={currentSlide} className="mt-2 text-lg font-semibold leading-snug">
+            {pdfFeatures[currentSlide].title}
+          </p>
+        </div>
+
+        <div className="mt-4 flex justify-center space-x-2">
+          {pdfFeatures.map((_, index) => (
+            <div
+              key={index}
+              className={`h-2 w-2 rounded-full transition-all duration-300 ${
+                index === currentSlide ? "bg-white" : "bg-white/40"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
       {/* Lado esquerdo: informações e recursos */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 relative">
         <div className="flex flex-col justify-center items-center w-full px-8 py-16">
@@ -166,10 +192,10 @@ export function AuthLoginPage() {
       </div>
 
       {/* Lado direito: formulário de login */}
-      <div className="flex w-full lg:w-1/2 flex-col justify-center px-8 py-12 lg:px-16">
+      <div className="flex h-[56svh] w-full flex-col justify-center px-5 py-5 sm:px-8 sm:py-8 lg:h-auto lg:w-1/2 lg:px-16 lg:py-12">
         <div className="mx-auto w-full max-w-sm">
           {/* Título */}
-          <div className="mb-6">
+          <div className="mb-4">
             <h2 className="text-2xl font-bold text-gray-900">
               {isLogin ? "Entrar" : "Criar conta"}
             </h2>
