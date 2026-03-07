@@ -89,11 +89,21 @@ export function SignatureCanvas({
     if (!ctx) return;
     ctx.beginPath();
     const dataUrl = canvas.toDataURL("image/png");
-    const isEmpty = canvas
-      .getContext("2d")
-      ?.getImageData(0, 0, canvas.width, canvas.height)
-      .data.every((channel, index) => index % 4 === 3 || channel === 0);
-    onSignatureChange(isEmpty ? null : dataUrl);
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let hasInk = false;
+
+    // Considera "assinado" quando existir ao menos um pixel diferente de branco.
+    for (let i = 0; i < pixels.length; i += 4) {
+      const r = pixels[i];
+      const g = pixels[i + 1];
+      const b = pixels[i + 2];
+      if (r < 250 || g < 250 || b < 250) {
+        hasInk = true;
+        break;
+      }
+    }
+
+    onSignatureChange(hasInk ? dataUrl : null);
   }, [onSignatureChange]);
 
   const clear = useCallback(() => {

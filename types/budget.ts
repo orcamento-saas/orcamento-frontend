@@ -79,7 +79,7 @@ export interface CreateBudgetBody {
 
 export interface SignBudgetBody {
   clientName: string;
-  clientEmail: string;
+  clientEmail?: string;
   signatureImageBase64: string;
 }
 

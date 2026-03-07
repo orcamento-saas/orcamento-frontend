@@ -81,10 +81,6 @@ export default function PublicBudgetPage() {
       setSubmitError("Informe seu nome.");
       return;
     }
-    if (!clientEmail.trim()) {
-      setSubmitError("Informe seu e-mail.");
-      return;
-    }
     if (!signatureDataUrl) {
       setSubmitError("Desenhe sua assinatura no quadro.");
       return;
@@ -96,7 +92,7 @@ export default function PublicBudgetPage() {
     try {
       const updated = await signBudget(id, {
         clientName: clientName.trim(),
-        clientEmail: clientEmail.trim(),
+        clientEmail: clientEmail.trim() || undefined,
         signatureImageBase64: base64,
       });
       setBudget(updated);
@@ -216,12 +212,12 @@ export default function PublicBudgetPage() {
                 type="email"
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
-                required
+                required={false}
                 placeholder="seu@email.com"
               />
               <div>
                 <label className="mb-0.5 block text-xs font-medium text-zinc-700">
-                  Assinatura
+                  Assinatura (obrigatória)
                 </label>
                 <SignatureCanvas
                   onSignatureChange={setSignatureDataUrl}
@@ -239,6 +235,7 @@ export default function PublicBudgetPage() {
                 className="w-full bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm"
                 size="lg"
                 isLoading={submitting}
+                disabled={!signatureDataUrl || submitting}
               >
                 Enviar assinatura
               </Button>
