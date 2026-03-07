@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/Button";
+import { useSkeletonNavigation } from "@/hooks/useSkeletonNavigation";
+import { MyBudgetsSkeleton, CreateBudgetSkeleton } from "@/components/Skeleton";
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,23 @@ export default function DashboardLayout({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isNavigating } = useSkeletonNavigation();
+  const pathname = usePathname();
+
+  // Renderiza skeleton baseado na rota que está sendo navegada
+  const renderSkeletonForRoute = () => {
+    if (!isNavigating) return children;
+    
+    // Como não temos acesso direto à próxima rota durante navegação,
+    // vamos usar um skeleton genérico que funciona bem para ambas as páginas
+    if (pathname.includes('/my-budgets') || pathname.includes('/create-budget')) {
+      return pathname.includes('/create-budget') ? 
+        <CreateBudgetSkeleton /> : 
+        <MyBudgetsSkeleton />;
+    }
+    
+    return <MyBudgetsSkeleton />;
+  };
 
   return (
     <AuthGuard>
@@ -79,7 +97,7 @@ export default function DashboardLayout({
         {/* Container principal com header mobile */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* Header mobile - apenas mobile */}
-          <header className="flex lg:hidden shrink-0 items-center justify-between border-b border-white/20 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 px-4 py-3">
+          <header className="relative flex lg:hidden shrink-0 items-center justify-between border-b border-white/20 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 px-4 py-3 z-50">
             <Link href="/dashboard" className="text-lg font-semibold tracking-tight text-white">
               Orçamento já
             </Link>
@@ -95,22 +113,12 @@ export default function DashboardLayout({
                 <line x1="4" x2="20" y1="18" y2="18" />
               </svg>
             </button>
-          </header>
 
-          {/* Dropdown mobile menu */}
-          <div className={`lg:hidden fixed inset-0 z-50 transition-all duration-200 ease-in-out ${
-            mobileMenuOpen 
-              ? 'opacity-100 pointer-events-auto' 
-              : 'opacity-0 pointer-events-none'
-          }`}>
-            <div
-              className="absolute inset-0 bg-zinc-900/20 backdrop-blur-sm transition-opacity duration-200"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-            <div className={`absolute top-[73px] left-0 right-0 border-b border-white/20 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 shadow-lg transition-all duration-200 ease-in-out origin-top ${
+            {/* Menu mobile dropdown - overlay */}
+            <div className={`absolute top-full left-0 right-0 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 border-b border-white/20 shadow-lg transition-all duration-200 ease-in-out origin-top z-40 ${
               mobileMenuOpen 
                 ? 'opacity-100 scale-100 translate-y-0' 
-                : 'opacity-0 scale-95 -translate-y-4'
+                : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
             }`}>
               <nav className="flex flex-col p-4">
                 <MobileNavLink 
@@ -139,9 +147,9 @@ export default function DashboardLayout({
                 </div>
               </nav>
             </div>
-          </div>
+          </header>
 
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-0 lg:py-6 sm:px-6">{children}</main>
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-0 lg:py-6 sm:px-6">{renderSkeletonForRoute()}</main>
         </div>
       </div>
     </AuthGuard>
@@ -160,13 +168,18 @@ function MobileNavLink({
   icon?: "dashboard" | "list" | "document";
 }) {
   const pathname = usePathname();
+  const { navigateWithSkeleton } = useSkeletonNavigation();
   const isActive = pathname === href || pathname.startsWith(href + "/");
   
+  const handleClick = () => {
+    onClick();
+    navigateWithSkeleton(href);
+  };
+  
   return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className={`flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-all duration-150 hover:scale-[1.02] ${
+    <button
+      onClick={handleClick}
+      className={`flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-all duration-150 hover:scale-[1.02] w-full ${
         isActive
           ? "bg-white/20 text-white"
           : "text-white/80 hover:bg-white/10 hover:text-white"
@@ -197,7 +210,7 @@ function MobileNavLink({
         </svg>
       )}
       <span>{children}</span>
-    </Link>
+    </button>
   );
 }
 
@@ -210,9 +223,9 @@ function MobileLogoutButton({ onClick }: { onClick: () => void }) {
   };
   
   return (
-    <Button
+    <button
       onClick={handleLogout}
-      className="w-full justify-start text-base text-white/80 hover:bg-white/10 hover:text-white border-0 bg-transparent"
+      className="flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-all duration-150 hover:scale-[1.02] text-white/80 hover:bg-white/10 hover:text-white w-full"
     >
       <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -220,7 +233,7 @@ function MobileLogoutButton({ onClick }: { onClick: () => void }) {
         <line x1="21" x2="9" y1="12" y2="12" />
       </svg>
       <span>Sair</span>
-    </Button>
+    </button>
   );
 }
 
@@ -236,12 +249,14 @@ function NavLink({
   icon?: "dashboard" | "list" | "document";
 }) {
   const pathname = usePathname();
+  const { navigateWithSkeleton } = useSkeletonNavigation();
   const isActive = pathname === href || pathname.startsWith(href + "/");
+  
   return (
-    <Link
-      href={href}
+    <button
+      onClick={() => navigateWithSkeleton(href)}
       title={collapsed ? (typeof children === "string" ? children : undefined) : undefined}
-      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full ${
         collapsed ? "justify-center px-0" : ""
       } ${
         isActive
@@ -274,19 +289,19 @@ function NavLink({
         </svg>
       )}
       {!collapsed && <span>{children}</span>}
-    </Link>
+    </button>
   );
 }
 
 function LogoutButton({ collapsed }: { collapsed: boolean }) {
   const { signOut } = useAuth();
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <button
       onClick={() => signOut()}
       title={collapsed ? "Sair" : undefined}
-      className={`w-full text-white/80 hover:bg-white/10 hover:text-white ${collapsed ? "justify-center px-0" : "justify-start"}`}
+      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors text-white/80 hover:bg-white/10 hover:text-white w-full ${
+        collapsed ? "justify-center px-0" : "justify-start"
+      }`}
     >
       <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -294,6 +309,6 @@ function LogoutButton({ collapsed }: { collapsed: boolean }) {
         <line x1="21" x2="9" y1="12" y2="12" />
       </svg>
       {!collapsed && <span>Sair</span>}
-    </Button>
+    </button>
   );
 }

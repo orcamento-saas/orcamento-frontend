@@ -349,7 +349,7 @@ export function BudgetPdfPreview({
             boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
           }}
         >
-          <table className="w-full border-collapse">
+          <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
             <thead>
               <tr>
                 <th
@@ -358,6 +358,7 @@ export function BudgetPdfPreview({
                     fontSize: 13,
                     background: themeGradient,
                     textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                    width: '12%'
                   }}
                 >
                   QUANT.
@@ -368,6 +369,7 @@ export function BudgetPdfPreview({
                     fontSize: 13,
                     background: themeGradient,
                     textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                    width: '46%'
                   }}
                 >
                   DESCRIÇÃO DO ITEM
@@ -378,6 +380,7 @@ export function BudgetPdfPreview({
                     fontSize: 13,
                     background: themeGradient,
                     textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                    width: '21%'
                   }}
                 >
                   VALOR UN.
@@ -388,6 +391,7 @@ export function BudgetPdfPreview({
                     fontSize: 13,
                     background: themeGradient,
                     textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                    width: '21%'
                   }}
                 >
                   VALOR TOTAL
@@ -406,7 +410,7 @@ export function BudgetPdfPreview({
                   <td className="text-center px-4 py-4" style={{ fontSize: 14 }}>
                     {item.quantity}
                   </td>
-                  <td className="text-left px-4 py-4" style={{ fontSize: 14 }}>
+                  <td className="text-left px-4 py-4 truncate overflow-hidden whitespace-nowrap" style={{ fontSize: 14, maxWidth: 0 }}>
                     {item.description}
                   </td>
                   <td className="text-center px-4 py-4" style={{ fontSize: 14 }}>
@@ -477,7 +481,7 @@ export function BudgetPdfPreview({
               Observação:
             </p>
             {observation ? (
-              <p style={{ fontSize: 14, whiteSpace: "pre-wrap", lineHeight: 1.6, flex: 1, overflow: "hidden" }}>
+              <p style={{ fontSize: 14, whiteSpace: "pre-wrap", lineHeight: 1.6, flex: 1, overflow: "hidden", wordWrap: "break-word", maxHeight: "96px", overflowY: "hidden" }}>
                 {observation}
               </p>
             ) : (
@@ -604,22 +608,23 @@ export function BudgetPdfPreview({
         className="w-full border-collapse"
         style={{
           marginTop: layout.tableMarginTop,
+          tableLayout: 'fixed',
           ...(layout.tableBorder ? { ...borderStyle, borderWidth: 1, borderStyle: "solid" as const } : {}),
         }}
       >
         <thead>
           <tr>
-            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize, color: fontColor }}>QUANT.</th>
-            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize, color: fontColor }}>DESCRIÇÃO DO ITEM</th>
-            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize, color: fontColor }}>VALOR UN.</th>
-            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize, color: fontColor }}>VALOR TOTAL</th>
+            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize, color: fontColor, width: '12%' }}>QUANT.</th>
+            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize, color: fontColor, width: '46%' }}>DESCRIÇÃO DO ITEM</th>
+            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize, color: fontColor, width: '21%' }}>VALOR UN.</th>
+            <th className="border text-center font-bold uppercase" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableThFontSize, color: fontColor, width: '21%' }}>VALOR TOTAL</th>
           </tr>
         </thead>
         <tbody>
           {validItems.map((item, i) => (
             <tr key={i}>
               <td className="border text-center" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize, color: fontColor }}>{item.quantity}</td>
-              <td className="border text-center" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize, color: fontColor }}>{item.description}</td>
+              <td className="border text-left truncate overflow-hidden whitespace-nowrap" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize, color: fontColor, maxWidth: 0 }}>{item.description}</td>
               <td className="border text-center" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize, color: fontColor }}>{formatCurrency(item.unitPrice)}</td>
               <td className="border text-center" style={{ ...borderStyle, padding: layout.tableCellPadding, fontSize: layout.tableCellFontSize, color: fontColor }}>{formatCurrency(item.quantity * item.unitPrice)}</td>
             </tr>
@@ -667,7 +672,7 @@ export function BudgetPdfPreview({
       >
         <p className="font-medium" style={{ marginBottom: layout.boxLabelMarginBottom }}>Observação:</p>
         {observation ? (
-          <p className="opacity-90" style={{ fontSize: layout.boxObservationContentFontSize }}>{observation}</p>
+          <p className="opacity-90" style={{ fontSize: layout.boxObservationContentFontSize, whiteSpace: "pre-wrap", wordWrap: "break-word", maxHeight: "96px", overflowY: "hidden", lineHeight: 1.6 }}>{observation}</p>
         ) : (
           <div className="mt-1 h-16" />
         )}

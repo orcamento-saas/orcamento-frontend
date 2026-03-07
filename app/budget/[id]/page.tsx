@@ -226,7 +226,7 @@ export default function PublicBudgetPage() {
                 <SignatureCanvas
                   onSignatureChange={setSignatureDataUrl}
                   width={400}
-                  height={100}
+                  height={140}
                 />
               </div>
               {submitError && (

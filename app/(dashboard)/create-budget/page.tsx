@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { BudgetPdfPreview } from "@/components/BudgetPdfPreview";
 import { LogoEditorModal } from "@/components/LogoEditorModal";
+import { CreateBudgetSkeleton } from "@/components/Skeleton";
+import { GeneratingBudgetLoading } from "@/components/GeneratingBudgetLoading";
 import type { BudgetItem, CreateBudgetBody } from "@/types/budget";
 import type { ApiError } from "@/lib/api";
 import {
@@ -278,6 +280,7 @@ export default function CreateBudgetPage() {
   const [items, setItems] = useState<BudgetItem[]>([{ ...EMPTY_ITEM }]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoFileName, setLogoFileName] = useState("");
   const [logoModalOpen, setLogoModalOpen] = useState(false);
@@ -349,6 +352,15 @@ export default function CreateBudgetPage() {
       cancelled = true;
     };
   }, [templateId]);
+
+  // Simula carregamento inicial da página
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 100); // 100ms de skeleton
+
+    return () => clearTimeout(timer);
+  }, []);
 
   function addItem() {
     setItems((prev) => [...prev, { ...EMPTY_ITEM }]);
@@ -514,16 +526,20 @@ export default function CreateBudgetPage() {
       }
       router.push(`/dashboard/budget/${budget.id}`);
       router.refresh();
+      // Não resetamos loading aqui - deixa a animação rodando até navegar
     } catch (err) {
       const apiErr = err as ApiError;
       setError(apiErr.message ?? "Erro ao criar orçamento.");
-    } finally {
-      setLoading(false);
+      setLoading(false); // Só reseta em caso de erro
     }
   }
 
   const inputBase =
     "w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1";
+
+  if (pageLoading) {
+    return <CreateBudgetSkeleton />;
+  }
 
   return (
     <>
@@ -574,30 +590,39 @@ export default function CreateBudgetPage() {
 
         {/* Botões de navegação - mobile */}
         <div className="mb-4 flex gap-2 px-4 shrink-0">
-          <Button
+          <button
             type="button"
-            variant={activeView === 'form' ? 'primary' : 'secondary'}
             onClick={() => setActiveView('form')}
-            className="flex-1"
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeView === 'form' 
+                ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm' 
+                : 'bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-50'
+            }`}
           >
             Formulário
-          </Button>
-          <Button
+          </button>
+          <button
             type="button"
-            variant={activeView === 'preview' ? 'primary' : 'secondary'}
             onClick={() => setActiveView('preview')}
-            className="flex-1"
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeView === 'preview' 
+                ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm' 
+                : 'bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-50'
+            }`}
           >
             Prévia
-          </Button>
+          </button>
         </div>
 
         {/* Formulário - mobile */}
         {activeView === 'form' && (
           <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 h-full">
-            <Card className="h-fit bg-teal-50">
-              <form onSubmit={handleSubmit} className="space-y-6">
-              <Input
+            {loading ? (
+              <GeneratingBudgetLoading />
+            ) : (
+              <Card className="h-fit bg-teal-50">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                <Input
                 label="Título"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -773,7 +798,7 @@ export default function CreateBudgetPage() {
                         </div>
                         
                         {/* Quantidade e Valor - lado a lado */}
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-[80px_1fr] gap-3 mb-3">
                           <div>
                             <label className="block text-xs font-medium text-zinc-600 mb-1">
                               Qtd
@@ -812,13 +837,15 @@ export default function CreateBudgetPage() {
                               className={`${inputBase} py-2`}
                             />
                           </div>
-                          <div>
-                            <label className="block text-xs font-medium text-zinc-600 mb-1">
-                              Subtotal
-                            </label>
-                            <div className="py-2.5 px-4 bg-zinc-50 rounded-xl border border-zinc-200 text-sm text-zinc-600">
-                              {formatCurrency(item.quantity * item.unitPrice)}
-                            </div>
+                        </div>
+                        
+                        {/* Subtotal - linha separada */}
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-600 mb-1">
+                            Subtotal
+                          </label>
+                          <div className="py-2.5 px-2 bg-zinc-50 rounded-xl border border-zinc-200 text-sm text-zinc-600 truncate overflow-hidden whitespace-nowrap">
+                            {formatCurrency(item.quantity * item.unitPrice)}
                           </div>
                         </div>
                         
@@ -841,14 +868,14 @@ export default function CreateBudgetPage() {
                 <button
                   type="button"
                   onClick={addItem}
-                  className="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700"
+                  className="mt-2 text-sm font-medium text-teal-600 hover:text-teal-700"
                 >
                   + Adicionar mais itens
                 </button>
               </div>
 
               <div className="flex flex-wrap items-center gap-6">
-                <div className="min-w-[120px]">
+                <div className="w-32">
                   <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                     Validade (dias)
                   </label>
@@ -856,21 +883,23 @@ export default function CreateBudgetPage() {
                     type="number"
                     min={1}
                     max={365}
-                    value={validityDays}
+                    value={validityDays || ""}
                     onChange={(e) =>
-                      setValidityDays(Math.max(1, parseInt(e.target.value, 10) || 1))
+                      setValidityDays(parseInt(e.target.value, 10) || 0)
                     }
-                    className={inputBase}
+                    className={`${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                     placeholder="Ex: 7"
                   />
                 </div>
-                <div>
-                  <span className="text-sm font-medium text-zinc-700">
-                    Total:{" "}
-                  </span>
-                  <span className="text-lg font-semibold text-zinc-900">
-                    {formatCurrency(totalCalculado)}
-                  </span>
+                <div className="flex-none max-w-[200px]">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-zinc-700 mb-1">
+                      Total
+                    </span>
+                    <span className="text-lg font-semibold text-zinc-900 truncate overflow-hidden whitespace-nowrap">
+                      {formatCurrency(totalCalculado)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -881,8 +910,9 @@ export default function CreateBudgetPage() {
                 <textarea
                   value={observation}
                   onChange={(e) => setObservation(e.target.value)}
-                  rows={3}
-                  className={inputBase}
+                  rows={4}
+                  className={`${inputBase} resize-none overflow-hidden`}
+                  style={{ height: '96px' }}
                   placeholder="Observações adicionais"
                 />
               </div>
@@ -933,6 +963,7 @@ export default function CreateBudgetPage() {
               </div>
             </form>
           </Card>
+            )}
         </div>
         )}
 
@@ -975,9 +1006,12 @@ export default function CreateBudgetPage() {
           Informações do orçamento
         </h1>
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-        <Card className="shrink-0 bg-teal-50">
-          <form onSubmit={handleSubmit} className="space-y-6">
-          <Input
+        {loading ? (
+          <GeneratingBudgetLoading />
+        ) : (
+          <Card className="shrink-0 bg-teal-50">
+            <form onSubmit={handleSubmit} className="space-y-6">
+            <Input
             label="Título"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -1153,7 +1187,7 @@ export default function CreateBudgetPage() {
                     </div>
                     
                     {/* Quantidade e Valor - lado a lado */}
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-[80px_120px_170px] gap-3">
                       <div>
                         <label className="block text-xs font-medium text-zinc-600 mb-1">
                           Qtd
@@ -1196,7 +1230,7 @@ export default function CreateBudgetPage() {
                         <label className="block text-xs font-medium text-zinc-600 mb-1">
                           Subtotal
                         </label>
-                        <div className="py-2.5 px-4 bg-zinc-50 rounded-xl border border-zinc-200 text-sm text-zinc-600">
+                        <div className="py-2.5 px-2 bg-zinc-50 rounded-xl border border-zinc-200 text-sm text-zinc-600 truncate overflow-hidden whitespace-nowrap">
                           {formatCurrency(item.quantity * item.unitPrice)}
                         </div>
                       </div>
@@ -1221,14 +1255,14 @@ export default function CreateBudgetPage() {
             <button
               type="button"
               onClick={addItem}
-              className="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700"
+              className="mt-2 text-sm font-medium text-teal-600 hover:text-teal-700"
             >
               + Adicionar mais itens
             </button>
           </div>
 
           <div className="flex flex-wrap items-center gap-6">
-            <div className="min-w-[120px]">
+            <div className="w-32">
               <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                 Validade (dias)
               </label>
@@ -1236,21 +1270,23 @@ export default function CreateBudgetPage() {
                 type="number"
                 min={1}
                 max={365}
-                value={validityDays}
+                value={validityDays || ""}
                 onChange={(e) =>
-                  setValidityDays(Math.max(1, parseInt(e.target.value, 10) || 1))
+                  setValidityDays(parseInt(e.target.value, 10) || 0)
                 }
-                className={inputBase}
+                className={`${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                 placeholder="Ex: 7"
               />
             </div>
-            <div>
-              <span className="text-sm font-medium text-zinc-700">
-                Total:{" "}
-              </span>
-              <span className="text-lg font-semibold text-zinc-900">
-                {formatCurrency(totalCalculado)}
-              </span>
+            <div className="flex-none max-w-[200px]">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-zinc-700 mb-1">
+                  Total
+                </span>
+                <span className="text-lg font-semibold text-zinc-900 truncate overflow-hidden whitespace-nowrap">
+                  {formatCurrency(totalCalculado)}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -1261,8 +1297,9 @@ export default function CreateBudgetPage() {
             <textarea
               value={observation}
               onChange={(e) => setObservation(e.target.value)}
-              rows={3}
-              className={inputBase}
+              rows={4}
+              className={`${inputBase} resize-none overflow-hidden`}
+              style={{ height: '96px' }}
               placeholder="Observações adicionais"
             />
           </div>
@@ -1313,6 +1350,7 @@ export default function CreateBudgetPage() {
           </div>
         </form>
         </Card>
+        )}
         </div>
       </div>
 

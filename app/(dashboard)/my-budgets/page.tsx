@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { MyBudgetsSkeleton } from "@/components/Skeleton";
 import type { ApiError } from "@/lib/api";
 
 // Hook personalizado para debounce
@@ -147,11 +148,7 @@ export default function MyBudgetsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-      </div>
-    );
+    return <MyBudgetsSkeleton />;
   }
 
   return (
