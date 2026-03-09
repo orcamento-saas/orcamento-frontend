@@ -690,6 +690,7 @@ export default function CreateBudgetPage() {
                 </div>
                 {companyLogoUrl && (
                   <div className="mt-2 flex items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={companyLogoUrl}
                       alt="Logo"
@@ -1079,6 +1080,7 @@ export default function CreateBudgetPage() {
             </div>
             {companyLogoUrl && (
               <div className="mt-2 flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={companyLogoUrl}
                   alt="Logo"

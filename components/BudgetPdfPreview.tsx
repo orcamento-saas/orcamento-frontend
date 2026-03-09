@@ -264,6 +264,7 @@ export function BudgetPdfPreview({
               }}
             >
               {!logoError ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={logoUrl}
                   alt="Logo"
@@ -553,6 +554,7 @@ export function BudgetPdfPreview({
             style={{ width: layout.logoWidth, height: layout.logoHeight, borderRadius: layout.logoBorderRadius }}
           >
             {!logoError ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={logoUrl}
                 alt="Logo"

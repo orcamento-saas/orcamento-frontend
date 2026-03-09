@@ -30,7 +30,9 @@ function normalizeApiMessage(message: unknown, fallback: string): string {
         continue;
       }
       if (Array.isArray(value)) {
-        const list = value.filter((v): v is string => typeof v === "string" && v.trim());
+        const list = value.filter(
+          (v): v is string => typeof v === "string" && v.trim().length > 0
+        );
         if (list.length > 0) {
           parts.push(`${field}: ${list.join(", ")}`);
         }
