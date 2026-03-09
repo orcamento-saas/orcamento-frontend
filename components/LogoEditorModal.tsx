@@ -6,7 +6,8 @@ import "react-easy-crop/react-easy-crop.css";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 
-const PDF_LOGO_SIZE = 96;
+// Mantemos a exibição em ~96px no layout, mas exportamos maior para evitar borrado.
+const LOGO_EXPORT_SIZE = 512;
 
 export interface LogoEditorModalProps {
   isOpen: boolean;
@@ -26,13 +27,13 @@ function createImage(url: string): Promise<HTMLImageElement> {
 }
 
 /**
- * Gera a imagem recortada em pixels e redimensionada para PDF_LOGO_SIZE.
+ * Gera a imagem recortada em pixels e redimensionada para alta resolução.
  * Baseado na documentação e exemplos oficiais do react-easy-crop.
  */
 async function getCroppedImg(
   imageSrc: string,
   pixelCrop: Area,
-  outputSize: number = PDF_LOGO_SIZE
+  outputSize: number = LOGO_EXPORT_SIZE
 ): Promise<string> {
   const image = await createImage(imageSrc);
   const canvas = document.createElement("canvas");
@@ -41,6 +42,10 @@ async function getCroppedImg(
 
   canvas.width = outputSize;
   canvas.height = outputSize;
+
+  // Forca interpolacao de alta qualidade no downscale/upscale.
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
 
   ctx.drawImage(
     image,
@@ -94,7 +99,7 @@ export function LogoEditorModal({
       <div className="space-y-4">
         <p className="text-sm text-zinc-600">
           Arraste a imagem para posicionar e use o zoom. O quadrado é o que
-          aparecerá no PDF (96×96 px).
+          aparecerá no PDF.
         </p>
 
         {imageDataUrl && (

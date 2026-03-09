@@ -198,7 +198,7 @@ function isValidEmail(str: string): boolean {
 
 const MAX_LOGO_PX = 2048;
 
-/** Redimensiona a imagem se algum lado passar de MAX_LOGO_PX, para não travar. */
+/** Redimensiona a imagem se algum lado passar de MAX_LOGO_PX, para nao travar. */
 function resizeLogoIfNeeded(dataUrl: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -220,9 +220,12 @@ function resizeLogoIfNeeded(dataUrl: string): Promise<string> {
         resolve(dataUrl);
         return;
       }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
       ctx.drawImage(img, 0, 0, cw, ch);
       try {
-        resolve(canvas.toDataURL("image/jpeg", 0.9));
+        // Mantem PNG para evitar artefatos de compressao que borram logos/textos.
+        resolve(canvas.toDataURL("image/png"));
       } catch {
         resolve(dataUrl);
       }
@@ -335,7 +338,6 @@ export default function CreateBudgetPage() {
   const templateOptions = [
     { value: "simples", label: "Simples" },
     { value: "moderno", label: "Moderno" },
-    { value: "profissional", label: "Profissional" },
   ];
 
   // Carrega o layout do orçamento sempre que o template selecionado mudar
@@ -1437,17 +1439,6 @@ export default function CreateBudgetPage() {
                     className="h-4 w-4 rounded border-zinc-300 text-primary-600 focus:ring-primary-500"
                   />
                   <span>Moderno</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="templateId"
-                    value="profissional"
-                    checked={templateId === "profissional"}
-                    onChange={() => setTemplateId("profissional")}
-                    className="h-4 w-4 rounded border-zinc-300 text-primary-600 focus:ring-primary-500"
-                  />
-                  <span>Profissional</span>
                 </label>
               </div>
             </div>

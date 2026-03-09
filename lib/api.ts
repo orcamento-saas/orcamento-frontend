@@ -9,6 +9,39 @@ export interface ApiError {
   status: number;
 }
 
+function normalizeApiMessage(message: unknown, fallback: string): string {
+  if (typeof message === "string" && message.trim()) {
+    return message;
+  }
+
+  if (Array.isArray(message)) {
+    const parts = message
+      .map((item) => (typeof item === "string" ? item : ""))
+      .filter(Boolean);
+    if (parts.length > 0) return parts.join(", ");
+  }
+
+  if (message && typeof message === "object") {
+    const entries = Object.entries(message as Record<string, unknown>);
+    const parts: string[] = [];
+    for (const [field, value] of entries) {
+      if (typeof value === "string" && value.trim()) {
+        parts.push(`${field}: ${value}`);
+        continue;
+      }
+      if (Array.isArray(value)) {
+        const list = value.filter((v): v is string => typeof v === "string" && v.trim());
+        if (list.length > 0) {
+          parts.push(`${field}: ${list.join(", ")}`);
+        }
+      }
+    }
+    if (parts.length > 0) return parts.join(" | ");
+  }
+
+  return fallback;
+}
+
 async function request<T>(
   path: string,
   options: RequestInit & { token?: string; useCache?: boolean } = {}
@@ -40,8 +73,9 @@ async function request<T>(
   const data = await res.json().catch(() => ({}));
   
   if (!res.ok) {
+    const fallbackMessage = res.statusText || "Erro na requisição";
     const err: ApiError = {
-      message: (data as { message?: string }).message ?? res.statusText ?? "Erro na requisição",
+      message: normalizeApiMessage((data as { message?: unknown }).message, fallbackMessage),
       status: res.status,
     };
     throw err;

@@ -56,6 +56,7 @@ export function AuthLoginPage() {
   const supabase = createClient();
 
   const [mode, setMode] = useState<Mode>("login");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -123,6 +124,11 @@ export function AuthLoginPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const normalizedName = name.trim();
+    if (!normalizedName) {
+      setError("Nome é obrigatório.");
+      return;
+    }
     if (password !== confirmPassword) {
       setError("As senhas não coincidem.");
       return;
@@ -133,7 +139,15 @@ export function AuthLoginPage() {
     }
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.signUp({ email, password });
+      const { error: err } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: normalizedName,
+          },
+        },
+      });
       if (err) {
         setError(err.message);
         return;
@@ -258,6 +272,24 @@ export function AuthLoginPage() {
 
           {/* Formulário */}
           <form onSubmit={isLogin ? handleLogin : handleRegister} className="space-y-4">
+            {!isLogin && (
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Nome
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  placeholder="Seu nome"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
+              </div>
+            )}
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 E-mail

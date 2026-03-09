@@ -16,7 +16,21 @@ export default function DashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isNavigating } = useSkeletonNavigation();
+  const { user } = useAuth();
   const pathname = usePathname();
+
+  const userDisplayName =
+    (typeof user?.user_metadata?.name === "string" && user.user_metadata.name.trim()) ||
+    (typeof user?.user_metadata?.full_name === "string" && user.user_metadata.full_name.trim()) ||
+    user?.email ||
+    "Usuário";
+
+  const userInitials = userDisplayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "U";
 
   // Renderiza skeleton baseado na rota que está sendo navegada
   const renderSkeletonForRoute = () => {
@@ -90,6 +104,16 @@ export default function DashboardLayout({
             </NavLink>
           </nav>
           <div className="border-t border-white/20 p-3">
+            <div className={`mb-3 flex items-center ${collapsed ? "justify-center" : "gap-2"}`}>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-semibold text-white">
+                {userInitials}
+              </div>
+              {!collapsed && (
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-white">{userDisplayName}</p>
+                </div>
+              )}
+            </div>
             <LogoutButton collapsed={collapsed} />
           </div>
         </aside>
@@ -143,6 +167,12 @@ export default function DashboardLayout({
                   Novo orçamento
                 </MobileNavLink>
                 <div className="mt-4 pt-4 border-t border-white/20">
+                  <div className="mb-3 flex items-center gap-3 px-3 py-1">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-semibold text-white">
+                      {userInitials}
+                    </div>
+                    <p className="truncate text-sm font-medium text-white">{userDisplayName}</p>
+                  </div>
                   <MobileLogoutButton onClick={() => setMobileMenuOpen(false)} />
                 </div>
               </nav>

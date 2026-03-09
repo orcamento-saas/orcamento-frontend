@@ -41,6 +41,14 @@ export async function generatePdf(id: string, token: string): Promise<Budget> {
   return apiPost<Budget>(`${BUDGETS}/${id}/generate-pdf`, {}, token);
 }
 
+export async function updateBudgetExecuted(
+  id: string,
+  executed: boolean,
+  token: string
+): Promise<Budget> {
+  return apiPost<Budget>(`${BUDGETS}/${id}/executed`, { executed }, token);
+}
+
 export async function getPublicBudget(id: string): Promise<PublicBudgetView> {
   return apiGet<PublicBudgetView>(`${PUBLIC_BUDGET}/${id}`);
 }

@@ -161,9 +161,6 @@ export default function DashboardBudgetPage() {
                 <a href={budget.pdfUrl} target="_blank" rel="noopener noreferrer">
                   <Button size="sm" className="h-8 px-2 text-xs sm:px-4 sm:text-sm bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">Ver PDF</Button>
                 </a>
-                <a href={budget.pdfUrl} download target="_blank" rel="noopener noreferrer">
-                  <Button size="sm" className="h-8 px-2 text-xs sm:px-4 sm:text-sm bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">Baixar</Button>
-                </a>
               </>
             )}
             {budget.status === "DRAFT" && (

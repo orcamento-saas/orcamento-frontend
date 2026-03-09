@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { getBudgets, deleteBudget } from "@/services/budgets";
+import { getBudgets, deleteBudget, updateBudgetExecuted } from "@/services/budgets";
 import type { Budget } from "@/types/budget";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -84,9 +84,6 @@ const btnYellow =
 const IconVerPdf = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
 );
-const IconDownload = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-);
 const IconAssinado = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
     <path d="M6 3h8l4 4v14H6z" />
@@ -111,7 +108,8 @@ export default function MyBudgetsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState("");
-  const [signedFilter, setSignedFilter] = useState<"all" | "signed" | "unsigned">("all");
+  const [signedFilter, setSignedFilter] = useState<"all" | "signed" | "unsigned" | "concluded">("all");
+  const [updatingExecutedId, setUpdatingExecutedId] = useState<string | null>(null);
   
   // Debounce search para reduzir requests
   const debouncedSearch = useDebounce(search, 500);
@@ -133,6 +131,7 @@ export default function MyBudgetsPage() {
     let list = budgets.filter((b) => matchesSearch(b, debouncedSearch));
     if (signedFilter === "signed") list = list.filter((b) => !!b.signedPdfUrl);
     if (signedFilter === "unsigned") list = list.filter((b) => !b.signedPdfUrl);
+    if (signedFilter === "concluded") list = list.filter((b) => !!b.executed);
     return list;
   }, [budgets, debouncedSearch, signedFilter]);
 
@@ -149,6 +148,20 @@ export default function MyBudgetsPage() {
       alert(e.message ?? "Erro ao excluir.");
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleExecutedChange = async (id: string, executed: boolean) => {
+    if (!accessToken) return;
+    setUpdatingExecutedId(id);
+    try {
+      const updated = await updateBudgetExecuted(id, executed, accessToken);
+      setBudgets((prev) => prev.map((b) => (b.id === id ? updated : b)));
+    } catch (err) {
+      const e = err as ApiError;
+      alert(e.message ?? "Erro ao atualizar execução.");
+    } finally {
+      setUpdatingExecutedId(null);
     }
   };
 
@@ -176,13 +189,14 @@ export default function MyBudgetsPage() {
         />
         <select
           value={signedFilter}
-          onChange={(e) => setSignedFilter(e.target.value as "all" | "signed" | "unsigned")}
+          onChange={(e) => setSignedFilter(e.target.value as "all" | "signed" | "unsigned" | "concluded")}
           className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
           aria-label="Filtrar por assinatura"
         >
           <option value="all">Todos</option>
           <option value="signed">Assinados</option>
           <option value="unsigned">Sem assinatura</option>
+          <option value="concluded">Concluído</option>
         </select>
       </div>
 
@@ -225,6 +239,18 @@ export default function MyBudgetsPage() {
                       <p className="mt-0.5 text-xs text-zinc-700 sm:mt-1 sm:text-sm">
                         Total {formatCurrency(b.value)} - {getDisplayDate(b)}
                       </p>
+                      {b.status === "SIGNED" && (
+                        <label className="mt-2 inline-flex items-center gap-2 text-xs text-zinc-700 sm:text-sm">
+                          <input
+                            type="checkbox"
+                            checked={!!b.executed}
+                            disabled={updatingExecutedId === b.id}
+                            onChange={(e) => handleExecutedChange(b.id, e.target.checked)}
+                            className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500"
+                          />
+                          <span>{updatingExecutedId === b.id ? "Salvando..." : "Concluído"}</span>
+                        </label>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center justify-center gap-5 sm:justify-start sm:gap-2">
                       {b.pdfUrl && (
@@ -237,14 +263,6 @@ export default function MyBudgetsPage() {
                             title="Ver PDF"
                           >
                             <IconVerPdf />
-                          </a>
-                          <a
-                            href={b.pdfUrl}
-                            download
-                            className={`${btnBase} ${btnPurple}`}
-                            title="Baixar PDF"
-                          >
-                            <IconDownload />
                           </a>
                         </>
                       )}

@@ -81,7 +81,7 @@ interface BudgetPdfPreviewProps {
   minScale?: number;
   /** Exibir lupa ao passar o mouse (default: true) */
   showLens?: boolean;
-  /** ID do template/layout (simples, moderno, profissional) - apenas informativo */
+  /** ID do template/layout (simples, moderno) - apenas informativo */
   templateId?: string | null;
   /** Configuração completa do layout, vinda do backend */
   layout: BudgetLayoutConfig;

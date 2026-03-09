@@ -6,7 +6,7 @@
 
 import { apiGet } from "@/lib/api";
 
-export type LayoutId = "simples" | "moderno" | "profissional";
+export type LayoutId = "simples" | "moderno";
 
 export interface BudgetLayoutConfig {
   id: LayoutId;

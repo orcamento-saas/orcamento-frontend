@@ -13,6 +13,7 @@ export interface Budget {
   description: string | null;
   value: number;
   status: BudgetStatus;
+  executed: boolean;
   pdfUrl: string | null;
   signedPdfUrl: string | null;
   createdAt: string;
