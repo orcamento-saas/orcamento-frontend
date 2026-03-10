@@ -88,3 +88,16 @@ export interface BudgetListResponse {
   data: Budget[];
   total: number;
 }
+
+export interface NotificationItem {
+  budgetId: string;
+  title: string;
+  clientName: string | null;
+  value: number;
+  signedAt: string;
+}
+
+export interface NotificationsSummaryResponse {
+  unseenCount: number;
+  items: NotificationItem[];
+}

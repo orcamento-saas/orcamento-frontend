@@ -5,6 +5,7 @@ import type {
   CreateBudgetBody,
   SignBudgetBody,
   BudgetListResponse,
+  NotificationsSummaryResponse,
 } from "@/types/budget";
 
 const BUDGETS = "budgets";
@@ -58,4 +59,14 @@ export async function signBudget(
   body: SignBudgetBody
 ): Promise<PublicBudgetView> {
   return apiPost<PublicBudgetView>(`${PUBLIC_BUDGET}/${id}/sign`, body);
+}
+
+export async function getNotificationsSummary(
+  token: string
+): Promise<NotificationsSummaryResponse> {
+  return apiGet<NotificationsSummaryResponse>(`${BUDGETS}/notifications`, token, false);
+}
+
+export async function markNotificationsSeen(token: string): Promise<void> {
+  return apiPost<void>(`${BUDGETS}/notifications/seen`, {}, token);
 }
