@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { createBudget, generatePdf } from "@/services/budgets";
+import { createBudget, generatePdf, getBudgets } from "@/services/budgets";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import { Modal } from "@/components/ui/Modal";
 import { BudgetPdfPreview } from "@/components/BudgetPdfPreview";
 import { LogoEditorModal } from "@/components/LogoEditorModal";
 import { CreateBudgetSkeleton } from "@/components/Skeleton";
@@ -130,7 +131,7 @@ function MobileTemplateDropdown({
   label: string;
   value: string;
   onChange: (value: string) => void;
-  options: { value: string; label: string }[];
+  options: Array<{ value: string; label: string; disabled?: boolean }>;
   isOpen: boolean;
   onToggle: () => void;
 }) {
@@ -160,11 +161,17 @@ function MobileTemplateDropdown({
           <button
             key={option.value}
             type="button"
+            disabled={option.disabled}
             onClick={() => {
+              if (option.disabled) {
+                return;
+              }
               onChange(option.value);
               onToggle();
             }}
-            className={`w-full px-3 py-2 text-left text-xs transition-all duration-150 hover:bg-zinc-50 first:rounded-t-md last:rounded-b-md ${
+            className={`w-full px-3 py-2 text-left text-xs transition-all duration-150 first:rounded-t-md last:rounded-b-md ${
+              option.disabled ? "cursor-not-allowed text-zinc-400" : "hover:bg-zinc-50"
+            } ${
               value === option.value ? "bg-zinc-100 font-medium" : ""
             }`}
           >
@@ -264,7 +271,7 @@ function getTodayISO(): string {
 
 export default function CreateBudgetPage() {
   const router = useRouter();
-  const { accessToken } = useAuth();
+  const { accessToken, plan } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -296,6 +303,8 @@ export default function CreateBudgetPage() {
   const [layout, setLayout] = useState<BudgetLayoutConfig | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'form' | 'preview'>('form');
+  const [showFreeUpgradeModal, setShowFreeUpgradeModal] = useState(false);
+  const canUsePremiumTemplates = plan === "PRO";
   const totalCalculado = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
     0
@@ -337,8 +346,46 @@ export default function CreateBudgetPage() {
 
   const templateOptions = [
     { value: "simples", label: "Simples" },
-    { value: "moderno", label: "Moderno" },
+    {
+      value: "moderno",
+      label: canUsePremiumTemplates ? "Moderno" : "Moderno (Pro)",
+      disabled: !canUsePremiumTemplates,
+    },
   ];
+
+  useEffect(() => {
+    if (!canUsePremiumTemplates && templateId !== "simples") {
+      setTemplateId("simples");
+    }
+  }, [canUsePremiumTemplates, templateId]);
+
+  useEffect(() => {
+    if (plan !== "FREE") {
+      setShowFreeUpgradeModal(false);
+      return;
+    }
+
+    if (!accessToken) {
+      return;
+    }
+
+    let cancelled = false;
+    getBudgets(accessToken, { page: 1, limit: 1 })
+      .then((response) => {
+        if (!cancelled) {
+          setShowFreeUpgradeModal(response.total >= 1);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setShowFreeUpgradeModal(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, plan]);
 
   // Carrega o layout do orçamento sempre que o template selecionado mudar
   useEffect(() => {
@@ -539,6 +586,12 @@ export default function CreateBudgetPage() {
   const inputBase =
     "w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1";
 
+  function handleFreeUpgradeAcknowledge(): void {
+    setShowFreeUpgradeModal(false);
+    router.push("/my-budgets");
+    router.refresh();
+  }
+
   if (pageLoading) {
     return <CreateBudgetSkeleton />;
   }
@@ -588,6 +641,11 @@ export default function CreateBudgetPage() {
               onToggle={() => setOpenDropdown(openDropdown === 'template' ? null : 'template')}
             />
           </div>
+          {!canUsePremiumTemplates && (
+            <p className="mt-3 text-center text-xs font-medium text-amber-700">
+              Plano Free usa somente o template Simples.
+            </p>
+          )}
         </div>
 
         {/* Botões de navegação - mobile */}
@@ -1437,17 +1495,43 @@ export default function CreateBudgetPage() {
                     name="templateId"
                     value="moderno"
                     checked={templateId === "moderno"}
+                    disabled={!canUsePremiumTemplates}
                     onChange={() => setTemplateId("moderno")}
                     className="h-4 w-4 rounded border-zinc-300 text-primary-600 focus:ring-primary-500"
                   />
-                  <span>Moderno</span>
+                  <span className={!canUsePremiumTemplates ? "text-zinc-400" : ""}>
+                    {canUsePremiumTemplates ? "Moderno" : "Moderno (Pro)"}
+                  </span>
                 </label>
               </div>
+              {!canUsePremiumTemplates && (
+                <p className="mt-3 text-xs font-medium text-amber-700">
+                  Faça upgrade para o plano Pro para liberar templates premium.
+                </p>
+              )}
             </div>
           </aside>
         </div>
       </div>
     </div>
+
+    <Modal
+      isOpen={showFreeUpgradeModal}
+      onClose={handleFreeUpgradeAcknowledge}
+      title="Limite do plano Free atingido"
+    >
+      <div className="space-y-4">
+        <p className="text-sm leading-6 text-zinc-600">
+          Você já utilizou o limite de criação do plano Free. Com o plano Pro, você libera criação ilimitada de orçamentos e acesso completo aos templates premium.
+        </p>
+        <p className="text-sm font-medium text-zinc-700">
+          Fale com o administrador para ativar seu plano Pro e continuar criando sem bloqueios.
+        </p>
+        <div className="flex justify-end">
+          <Button onClick={handleFreeUpgradeAcknowledge}>Entendi</Button>
+        </div>
+      </div>
+    </Modal>
     </>
   );
 }

@@ -28,16 +28,18 @@ export default function DashboardLayout({
   const [bellAnimate, setBellAnimate] = useState(false);
   const previousUnseenCountRef = useRef(0);
   const { isNavigating } = useSkeletonNavigation();
-  const { user, accessToken } = useAuth();
+  const { user, accessToken, account, isAdmin, plan } = useAuth();
   const pathname = usePathname();
 
   const userDisplayName =
+    account?.name ||
     (typeof user?.user_metadata?.name === "string" && user.user_metadata.name.trim()) ||
     (typeof user?.user_metadata?.full_name === "string" && user.user_metadata.full_name.trim()) ||
     user?.email ||
     "Usuário";
 
-  const userEmail = user?.email ?? "usuario@email.com";
+  const userEmail = account?.email ?? user?.email ?? "usuario@email.com";
+  const planLabel = plan === "PRO" ? "Pro" : "Free";
 
   const userInitials = userDisplayName
     .split(" ")
@@ -178,6 +180,11 @@ export default function DashboardLayout({
             <NavLink href="/create-budget" collapsed={collapsed} icon="document">
               Novo orçamento
             </NavLink>
+            {isAdmin && (
+              <NavLink href="/admin" collapsed={collapsed} icon="shield">
+                Administração
+              </NavLink>
+            )}
           </nav>
           <div className="border-t border-white/20 p-3">
             <div className={`mb-3 flex items-center ${collapsed ? "justify-center" : "gap-2"}`}>
@@ -187,6 +194,9 @@ export default function DashboardLayout({
               {!collapsed && (
                 <div className="min-w-0">
                   <p className="truncate text-xs font-medium text-white/90">{userEmail}</p>
+                  <p className="mt-1 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
+                    {planLabel}
+                  </p>
                 </div>
               )}
             </div>
@@ -245,12 +255,26 @@ export default function DashboardLayout({
                 >
                   Novo orçamento
                 </MobileNavLink>
+                {isAdmin && (
+                  <MobileNavLink 
+                    href="/admin" 
+                    icon="shield"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Administração
+                  </MobileNavLink>
+                )}
                 <div className="mt-4 pt-4 border-t border-white/20">
                   <div className="mb-3 flex items-center gap-3 px-3 py-1">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-semibold text-white">
                       {userInitials}
                     </div>
-                    <p className="truncate text-xs font-medium text-white/90">{userEmail}</p>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-white/90">{userEmail}</p>
+                      <p className="mt-1 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
+                        {planLabel}
+                      </p>
+                    </div>
                   </div>
                   <MobileLogoutButton onClick={() => setMobileMenuOpen(false)} />
                 </div>
@@ -259,6 +283,9 @@ export default function DashboardLayout({
           </header>
 
           <div className="hidden lg:flex shrink-0 items-center justify-end gap-3 border-b border-zinc-200 bg-white px-6 py-2">
+            <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${plan === "PRO" ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-700"}`}>
+              Plano {planLabel}
+            </span>
             <p className="text-sm font-medium text-zinc-700">
               Bem-vindo, <span className="text-zinc-900">{userDisplayName}</span>
             </p>
@@ -379,7 +406,7 @@ function MobileNavLink({
   href: string;
   children: React.ReactNode;
   onClick: () => void;
-  icon?: "dashboard" | "list" | "document";
+  icon?: "dashboard" | "list" | "document" | "shield";
 }) {
   const pathname = usePathname();
   const { navigateWithSkeleton } = useSkeletonNavigation();
@@ -414,6 +441,11 @@ function MobileNavLink({
           <line x1="3" x2="3.01" y1="6" y2="6" />
           <line x1="3" x2="3.01" y1="12" y2="12" />
           <line x1="3" x2="3.01" y1="18" y2="18" />
+        </svg>
+      ) : icon === "shield" ? (
+        <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3Z" />
+          <path d="m9.5 12 1.8 1.8 3.2-3.6" />
         </svg>
       ) : (
         <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -460,7 +492,7 @@ function NavLink({
   href: string;
   children: React.ReactNode;
   collapsed: boolean;
-  icon?: "dashboard" | "list" | "document";
+  icon?: "dashboard" | "list" | "document" | "shield";
 }) {
   const pathname = usePathname();
   const { navigateWithSkeleton } = useSkeletonNavigation();
@@ -493,6 +525,11 @@ function NavLink({
           <line x1="3" x2="3.01" y1="6" y2="6" />
           <line x1="3" x2="3.01" y1="12" y2="12" />
           <line x1="3" x2="3.01" y1="18" y2="18" />
+        </svg>
+      ) : icon === "shield" ? (
+        <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3Z" />
+          <path d="m9.5 12 1.8 1.8 3.2-3.6" />
         </svg>
       ) : (
         <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

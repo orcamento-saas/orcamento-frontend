@@ -1,12 +1,17 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 // Cache simples para requests GET
-const requestCache = new Map<string, { data: any; timestamp: number }>();
+const requestCache = new Map<string, { data: unknown; timestamp: number }>();
 const CACHE_DURATION = 30000; // 30 segundos
 
 export interface ApiError {
   message: string;
   status: number;
+  code?: string;
+}
+
+function clearRequestCache(): void {
+  requestCache.clear();
 }
 
 function normalizeApiMessage(message: unknown, fallback: string): string {
@@ -56,7 +61,7 @@ async function request<T>(
     const cacheKey = `${url}${token ? `_${token.substring(0, 10)}` : ''}`;
     const cached = requestCache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-      return cached.data;
+      return cached.data as T;
     }
   }
   
@@ -79,8 +84,13 @@ async function request<T>(
     const err: ApiError = {
       message: normalizeApiMessage((data as { message?: unknown }).message, fallbackMessage),
       status: res.status,
+      code: typeof (data as { code?: unknown }).code === "string" ? (data as { code: string }).code : undefined,
     };
     throw err;
+  }
+
+  if (init.method && init.method !== "GET") {
+    clearRequestCache();
   }
   
   // Salvar no cache se GET e useCache ativo
@@ -98,6 +108,10 @@ export async function apiGet<T>(path: string, token?: string, useCache = true): 
 
 export async function apiPost<T>(path: string, body: unknown, token?: string): Promise<T> {
   return request<T>(path, { method: "POST", body: JSON.stringify(body), token });
+}
+
+export async function apiPatch<T>(path: string, body: unknown, token?: string): Promise<T> {
+  return request<T>(path, { method: "PATCH", body: JSON.stringify(body), token });
 }
 
 export async function apiDelete(path: string, token?: string): Promise<void> {
