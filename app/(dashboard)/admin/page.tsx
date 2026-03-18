@@ -128,15 +128,18 @@ function SummaryTile({
     tone === "emerald"
       ? "from-emerald-500 to-green-600"
       : tone === "amber"
-        ? "from-amber-500 to-orange-600"
-        : tone === "rose"
-          ? "from-rose-500 to-red-600"
-          : "from-slate-700 to-slate-900";
+      ? "from-amber-500 to-orange-600"
+      : tone === "rose"
+      ? "from-rose-500 to-red-600"
+      : "from-slate-700 to-slate-900";
 
   return (
-    <div className={`rounded-3xl bg-gradient-to-br ${toneClass} p-5 text-white shadow-lg shadow-zinc-200/60`}>
+    <div
+      className={`flex items-center justify-between rounded-xl bg-gradient-to-br ${toneClass} px-5 text-white shadow-lg shadow-zinc-200/60`}
+      style={{ height: "40px" }}
+    >
       <p className="text-sm font-medium text-white/80">{label}</p>
-      <p className="mt-3 text-3xl font-semibold tracking-tight">{value}</p>
+      <p className="text-3xl font-semibold tracking-tight">{value}</p>
     </div>
   );
 }
@@ -397,43 +400,47 @@ export default function AdminPage() {
 
   return (
     <AdminGuard>
-      <div className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-x-hidden overflow-y-auto py-6 pr-1">
-        <div className="inline-flex w-fit rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm">
-          <button
-            type="button"
-            className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === "users" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
-            }`}
-            onClick={() => setActiveTab("users")}
-          >
-            Usuários
-          </button>
-          <button
-            type="button"
-            className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === "events" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
-            }`}
-            onClick={() => setActiveTab("events")}
-          >
-            Eventos
-          </button>
-        </div>
+      <div className="flex h-full min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto py-2 pr-1">
+        <div className="flex flex-wrap gap-4 items-start">
+          <div className="inline-flex w-fit rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm">
+            <button
+              type="button"
+              className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "users" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+              }`}
+              onClick={() => setActiveTab("users")}
+            >
+              Usuários
+            </button>
+            <button
+              type="button"
+              className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "events" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+              }`}
+              onClick={() => setActiveTab("events")}
+            >
+              Eventos
+            </button>
+          </div>
 
-        {activeTab === "users" ? (
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <SummaryTile label="Usuarios" value={total} tone="slate" />
-            <SummaryTile label="Free" value={stats.free} tone="amber" />
-            <SummaryTile label="Pro" value={stats.pro} tone="emerald" />
-            <SummaryTile label="Suspenso" value={stats.suspended} tone="rose" />
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 flex-1">
+            {activeTab === "users" ? (
+              <>
+                <SummaryTile label="Usuarios" value={total} tone="slate" />
+                <SummaryTile label="Free" value={stats.free} tone="amber" />
+                <SummaryTile label="Pro" value={stats.pro} tone="emerald" />
+                <SummaryTile label="Suspenso" value={stats.suspended} tone="rose" />
+              </>
+            ) : (
+              <>
+                <SummaryTile label="Eventos" value={eventsTotal} tone="slate" />
+                <SummaryTile label="Info" value={eventStats.info} tone="emerald" />
+                <SummaryTile label="Avisos" value={eventStats.warn} tone="amber" />
+                <SummaryTile label="Erros" value={eventStats.error} tone="rose" />
+              </>
+            )}
           </section>
-        ) : (
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <SummaryTile label="Eventos" value={eventsTotal} tone="slate" />
-            <SummaryTile label="Info" value={eventStats.info} tone="emerald" />
-            <SummaryTile label="Avisos" value={eventStats.warn} tone="amber" />
-            <SummaryTile label="Erros" value={eventStats.error} tone="rose" />
-          </section>
-        )}
+        </div>
 
         <Card className="rounded-[2rem] border-zinc-200 p-0 shadow-lg shadow-zinc-200/60">
           <CardHeader className="mb-0 border-b border-zinc-200 px-6 py-5">
@@ -441,9 +448,7 @@ export default function AdminPage() {
               <div>
                 <CardTitle>{activeTab === "users" ? "Usuários da plataforma" : "Eventos do sistema"}</CardTitle>
                 <p className="mt-1 text-sm text-zinc-500">
-                  {activeTab === "users"
-                    ? "Filtros rápidos com paginação para manter a listagem leve."
-                    : "Acompanhe logins, assinaturas, ações administrativas e erros de sistema."}
+                  {null}
                 </p>
               </div>
               {activeTab === "users" ? (
@@ -477,7 +482,7 @@ export default function AdminPage() {
                   <Input
                     value={eventSearch}
                     onChange={(event) => setEventSearch(event.target.value)}
-                    placeholder="Buscar por mensagem ou rota"
+                    placeholder="Buscar por rota"
                   />
                   <select
                     value={eventTypeFilter}
@@ -499,7 +504,7 @@ export default function AdminPage() {
                     onChange={(event) => setEventSeverityFilter(event.target.value as EventSeverityFilter)}
                     className="h-10 rounded-xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
                   >
-                    <option value="ALL">Todas as severidades</option>
+                    <option value="ALL">Todos os eventos</option>
                     <option value="INFO">Info</option>
                     <option value="WARN">Aviso</option>
                     <option value="ERROR">Erro</option>
@@ -623,31 +628,24 @@ export default function AdminPage() {
               </div>
             ) : (
               <div className="overflow-hidden rounded-3xl border border-zinc-200">
-                <div className="hidden grid-cols-[170px_130px_170px_minmax(0,1.2fr)_130px_120px] gap-4 border-b border-zinc-200 bg-zinc-50 px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 lg:grid">
+                <div className="hidden grid-cols-[180px_140px_180px_220px_140px] gap-6 border-b border-zinc-200 bg-zinc-50 px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 lg:grid">
                   <span>Data</span>
-                  <span>Severidade</span>
+                  <span>Evento</span>
                   <span>Tipo</span>
-                  <span>Mensagem</span>
                   <span>Usuário</span>
                   <span>Status</span>
                 </div>
                 <ul className="divide-y divide-zinc-200">
                   {events.map((event) => (
                     <li key={event.id} className="px-5 py-4">
-                      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[170px_130px_170px_minmax(0,1.2fr)_130px_120px] lg:items-start">
+                      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[180px_140px_180px_220px_140px] lg:items-start">
                         <p className="text-xs text-zinc-500">{formatDateTime(event.createdAt)}</p>
                         <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${event.severity === "ERROR" ? "bg-red-100 text-red-700" : event.severity === "WARN" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
                           {event.severity}
                         </span>
                         <p className="text-xs font-semibold text-zinc-700">{event.type}</p>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm text-zinc-800">{event.message ?? "Sem mensagem"}</p>
-                          <p className="mt-1 truncate text-xs text-zinc-500">
-                            {(event.method ?? "-") + " " + (event.route ?? "-")}
-                          </p>
-                        </div>
-                        <p className="truncate text-xs text-zinc-600">{event.actor?.email ?? "Sistema"}</p>
-                        <p className="text-xs text-zinc-500">{event.statusCode ?? "-"}</p>
+                        <p className="text-xs text-zinc-600">{event.actor?.email ?? "Sistema"}</p>
+                        <p className="text-xs text-zinc-500">{event.statusCode ?? "Status não disponível"}</p>
                       </div>
                     </li>
                   ))}

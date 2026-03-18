@@ -6,6 +6,8 @@ import type {
   SignBudgetBody,
   BudgetListResponse,
   NotificationsSummaryResponse,
+  BudgetPreviewHtmlBody,
+  BudgetPreviewHtmlResponse,
 } from "@/types/budget";
 
 const BUDGETS = "budgets";
@@ -69,4 +71,10 @@ export async function getNotificationsSummary(
 
 export async function markNotificationsSeen(token: string): Promise<void> {
   return apiPost<void>(`${BUDGETS}/notifications/seen`, {}, token);
+}
+
+export async function getBudgetPreviewHtml(
+  body: BudgetPreviewHtmlBody
+): Promise<BudgetPreviewHtmlResponse> {
+  return apiPost<BudgetPreviewHtmlResponse>("public/layouts/preview-html", body);
 }

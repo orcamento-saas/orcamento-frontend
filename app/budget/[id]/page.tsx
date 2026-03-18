@@ -11,6 +11,25 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { SignatureCanvas } from "@/components/SignatureCanvas";
 import type { ApiError } from "@/lib/api";
 
+const SIGN_FIELD_LIMITS = {
+  simples: {
+    clientName: 38,
+    clientEmail: 42,
+  },
+  moderno: {
+    clientName: 30,
+    clientEmail: 34,
+  },
+  profissional: {
+    clientName: 30,
+    clientEmail: 34,
+  },
+} as const;
+
+function clampTextToLimit(value: string, maxLength: number): string {
+  return value.slice(0, maxLength);
+}
+
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -59,6 +78,11 @@ export default function PublicBudgetPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [signed, setSigned] = useState(false);
+  const templateId =
+    budget?.templateId === "moderno" || budget?.templateId === "profissional"
+      ? budget.templateId
+      : "simples";
+  const signLimits = SIGN_FIELD_LIMITS[templateId];
 
   useEffect(() => {
     if (!id) return;
@@ -203,7 +227,12 @@ export default function PublicBudgetPage() {
               <Input
                 label="Nome"
                 value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
+                onChange={(e) =>
+                  setClientName(
+                    clampTextToLimit(e.target.value, signLimits.clientName)
+                  )
+                }
+                maxLength={signLimits.clientName}
                 required
                 placeholder="Seu nome completo"
               />
@@ -211,7 +240,12 @@ export default function PublicBudgetPage() {
                 label="E-mail"
                 type="email"
                 value={clientEmail}
-                onChange={(e) => setClientEmail(e.target.value)}
+                onChange={(e) =>
+                  setClientEmail(
+                    clampTextToLimit(e.target.value, signLimits.clientEmail)
+                  )
+                }
+                maxLength={signLimits.clientEmail}
                 required={false}
                 placeholder="seu@email.com"
               />

@@ -3,16 +3,23 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { createBudget, generatePdf, getBudgets } from "@/services/budgets";
+import {
+  createBudget,
+  generatePdf,
+  getBudgetPreviewHtml,
+} from "@/services/budgets";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
-import { BudgetPdfPreview } from "@/components/BudgetPdfPreview";
+import { BackendTemplatePreview } from "@/components/BackendTemplatePreview";
 import { LogoEditorModal } from "@/components/LogoEditorModal";
 import { CreateBudgetSkeleton } from "@/components/Skeleton";
 import { GeneratingBudgetLoading } from "@/components/GeneratingBudgetLoading";
-import type { BudgetItem, CreateBudgetBody } from "@/types/budget";
+import type {
+  BudgetItem,
+  CreateBudgetBody,
+} from "@/types/budget";
 import type { ApiError } from "@/lib/api";
 import {
   type LayoutId,
@@ -25,6 +32,60 @@ const EMPTY_ITEM: BudgetItem = {
   quantity: 1,
   unitPrice: 0,
 };
+
+type PreviewLimitedField =
+  | "companyName"
+  | "clientName"
+  | "clientEmail"
+  | "clientAddress"
+  | "companyAddress"
+  | "itemDescription"
+  | "observation";
+
+const PREVIEW_FIELD_LIMITS: Record<LayoutId, Record<PreviewLimitedField, number>> = {
+  simples: {
+    companyName: 45,
+    clientName: 38,
+    clientEmail: 42,
+    clientAddress: 46,
+    companyAddress: 46,
+    itemDescription: 56,
+    observation: 260,
+  },
+  moderno: {
+    companyName: 34,
+    clientName: 30,
+    clientEmail: 34,
+    clientAddress: 38,
+    companyAddress: 34,
+    itemDescription: 42,
+    observation: 170,
+  },
+  profissional: {
+    companyName: 34,
+    clientName: 30,
+    clientEmail: 34,
+    clientAddress: 38,
+    companyAddress: 34,
+    itemDescription: 42,
+    observation: 170,
+  },
+};
+
+const OBSERVATION_MAX_LINES = 8;
+
+function clampTextToLimit(value: string, maxLength: number): string {
+  return value.slice(0, maxLength);
+}
+
+function normalizeObservationInput(value: string, maxLines: number): string {
+  return value
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .slice(0, maxLines)
+    .join("\n");
+}
 
 function ColorPaletteRow({
   label,
@@ -301,14 +362,25 @@ export default function CreateBudgetPage() {
   const [previewGridColor, setPreviewGridColor] = useState("#20b2aa");
   const [templateId, setTemplateId] = useState<LayoutId>("simples");
   const [layout, setLayout] = useState<BudgetLayoutConfig | null>(null);
+  const [backendPreviewHtml, setBackendPreviewHtml] = useState("");
+  const [backendPreviewLoading, setBackendPreviewLoading] = useState(false);
+  const [backendPreviewError, setBackendPreviewError] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'form' | 'preview'>('form');
   const [showFreeUpgradeModal, setShowFreeUpgradeModal] = useState(false);
+  const [freeUpgradeModalReason, setFreeUpgradeModalReason] = useState<
+    "premium-template" | "creation-limit" | null
+  >(null);
   const canUsePremiumTemplates = plan === "PRO";
   const totalCalculado = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
     0
   );
+  const isBackendTemplate = true;
+  const isModernLikeTemplate =
+    templateId === "moderno" || templateId === "profissional" || templateId === "simples";
+  const previewLimits = PREVIEW_FIELD_LIMITS[templateId];
+  const observationMaxLines = OBSERVATION_MAX_LINES;
 
   // Arrays de cores para os dropdowns
   const fontColors = [
@@ -348,44 +420,15 @@ export default function CreateBudgetPage() {
     { value: "simples", label: "Simples" },
     {
       value: "moderno",
-      label: canUsePremiumTemplates ? "Moderno" : "Moderno (Pro)",
-      disabled: !canUsePremiumTemplates,
+      label: canUsePremiumTemplates ? "Moderno" : "Moderno (visualizar)",
+      disabled: false,
+    },
+    {
+      value: "profissional",
+      label: canUsePremiumTemplates ? "Profissional" : "Profissional (visualizar)",
+      disabled: false,
     },
   ];
-
-  useEffect(() => {
-    if (!canUsePremiumTemplates && templateId !== "simples") {
-      setTemplateId("simples");
-    }
-  }, [canUsePremiumTemplates, templateId]);
-
-  useEffect(() => {
-    if (plan !== "FREE") {
-      setShowFreeUpgradeModal(false);
-      return;
-    }
-
-    if (!accessToken) {
-      return;
-    }
-
-    let cancelled = false;
-    getBudgets(accessToken, { page: 1, limit: 1 })
-      .then((response) => {
-        if (!cancelled) {
-          setShowFreeUpgradeModal(response.total >= 1);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setShowFreeUpgradeModal(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [accessToken, plan]);
 
   // Carrega o layout do orçamento sempre que o template selecionado mudar
   useEffect(() => {
@@ -401,6 +444,87 @@ export default function CreateBudgetPage() {
       cancelled = true;
     };
   }, [templateId]);
+
+  useEffect(() => {
+    if (!isBackendTemplate) {
+      setBackendPreviewHtml("");
+      setBackendPreviewLoading(false);
+      setBackendPreviewError(null);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setBackendPreviewLoading(true);
+      setBackendPreviewError(null);
+
+      try {
+        const response = await getBudgetPreviewHtml({
+          title,
+          description,
+          value: totalCalculado,
+          companyLogoUrl,
+          companyName,
+          companyAddress,
+          companyPhone,
+          companyCnpj,
+          clientName,
+          clientEmail,
+          clientPhone,
+          clientAddress,
+          documentDate,
+          validityDays,
+          observation,
+          items,
+          fontColor: previewFontColor,
+          backgroundColor: previewBgColor,
+          gridColor: previewGridColor,
+          templateId,
+        });
+
+        if (!cancelled) {
+          setBackendPreviewHtml(response.html);
+        }
+      } catch {
+        if (!cancelled) {
+          setBackendPreviewError(
+            "Não foi possível carregar a prévia do template selecionado."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setBackendPreviewLoading(false);
+        }
+      }
+    }, 180);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [
+    isBackendTemplate,
+    templateId,
+    title,
+    description,
+    totalCalculado,
+    companyLogoUrl,
+    companyName,
+    companyAddress,
+    companyPhone,
+    companyCnpj,
+    clientName,
+    clientEmail,
+    clientPhone,
+    clientAddress,
+    documentDate,
+    validityDays,
+    observation,
+    items,
+    previewFontColor,
+    previewBgColor,
+    previewGridColor,
+  ]);
 
   // Simula carregamento inicial da página
   useEffect(() => {
@@ -424,9 +548,14 @@ export default function CreateBudgetPage() {
     field: keyof BudgetItem,
     value: string | number
   ) {
+    const nextValue =
+      field === "description" && typeof value === "string"
+        ? clampTextToLimit(value, previewLimits.itemDescription)
+        : value;
+
     setItems((prev) =>
       prev.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
+        i === index ? { ...item, [field]: nextValue } : item
       )
     );
   }
@@ -494,6 +623,8 @@ export default function CreateBudgetPage() {
     setError(null);
     setCompanyLogoUrl("");
     setLogoFileName("");
+    setBackendPreviewHtml("");
+    setBackendPreviewError(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -542,6 +673,12 @@ export default function CreateBudgetPage() {
       return;
     }
 
+    if (!canUsePremiumTemplates && templateId !== "simples") {
+      setFreeUpgradeModalReason("premium-template");
+      setShowFreeUpgradeModal(true);
+      return;
+    }
+
     const body: CreateBudgetBody = {
       title: title.trim(),
       description: description.trim() || undefined,
@@ -578,6 +715,18 @@ export default function CreateBudgetPage() {
       // Não resetamos loading aqui - deixa a animação rodando até navegar
     } catch (err) {
       const apiErr = err as ApiError;
+      if (apiErr.code === "FREE_PLAN_DAILY_LIMIT_REACHED") {
+        setFreeUpgradeModalReason("creation-limit");
+        setShowFreeUpgradeModal(true);
+        setLoading(false);
+        return;
+      }
+      if (apiErr.code === "FREE_PLAN_TEMPLATE_RESTRICTED") {
+        setFreeUpgradeModalReason("premium-template");
+        setShowFreeUpgradeModal(true);
+        setLoading(false);
+        return;
+      }
       setError(apiErr.message ?? "Erro ao criar orçamento.");
       setLoading(false); // Só reseta em caso de erro
     }
@@ -586,10 +735,35 @@ export default function CreateBudgetPage() {
   const inputBase =
     "w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1";
 
+  function renderPreviewContent() {
+    if (!layout) return null;
+
+    if (isBackendTemplate) {
+      return (
+        <BackendTemplatePreview
+          html={backendPreviewHtml}
+          loading={backendPreviewLoading}
+          error={backendPreviewError}
+          title={`Prévia do template ${templateId}`}
+          minHeightClassName="min-h-[420px]"
+        />
+      );
+    }
+
+    return (
+      <BackendTemplatePreview
+        html={backendPreviewHtml}
+        loading={backendPreviewLoading}
+        error={backendPreviewError}
+        title={`Prévia do template ${templateId}`}
+        minHeightClassName="min-h-[420px]"
+      />
+    );
+  }
+
   function handleFreeUpgradeAcknowledge(): void {
     setShowFreeUpgradeModal(false);
-    router.push("/my-budgets");
-    router.refresh();
+    setFreeUpgradeModalReason(null);
   }
 
   if (pageLoading) {
@@ -617,7 +791,7 @@ export default function CreateBudgetPage() {
               onToggle={() => setOpenDropdown(openDropdown === 'font' ? null : 'font')}
             />
             <MobileColorDropdown
-              label={templateId === "moderno" ? "Fundo" : "Grade"}
+              label={isModernLikeTemplate ? "Fundo" : "Grade"}
               value={previewGridColor}
               onChange={setPreviewGridColor}
               colors={gridColors}
@@ -625,7 +799,7 @@ export default function CreateBudgetPage() {
               onToggle={() => setOpenDropdown(openDropdown === 'grid' ? null : 'grid')}
             />
             <MobileColorDropdown
-              label={templateId === "moderno" ? "Grade" : "Fundo"}
+              label={isModernLikeTemplate ? "Grade" : "Fundo"}
               value={previewBgColor}
               onChange={setPreviewBgColor}
               colors={backgroundColors}
@@ -786,7 +960,12 @@ export default function CreateBudgetPage() {
               <Input
                 label="Nome da empresa"
                 value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
+                onChange={(e) =>
+                  setCompanyName(
+                    clampTextToLimit(e.target.value, previewLimits.companyName)
+                  )
+                }
+                maxLength={previewLimits.companyName}
                 placeholder="Sua empresa"
               />
 
@@ -809,7 +988,12 @@ export default function CreateBudgetPage() {
                   <Input
                     label="Nome"
                     value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
+                    onChange={(e) =>
+                      setClientName(
+                        clampTextToLimit(e.target.value, previewLimits.clientName)
+                      )
+                    }
+                    maxLength={previewLimits.clientName}
                     placeholder="Nome do cliente"
                     required
                   />
@@ -817,19 +1001,30 @@ export default function CreateBudgetPage() {
                     label="E-mail"
                     type="email"
                     value={clientEmail}
-                    onChange={(e) => setClientEmail(e.target.value)}
+                    onChange={(e) =>
+                      setClientEmail(
+                        clampTextToLimit(e.target.value, previewLimits.clientEmail)
+                      )
+                    }
+                    maxLength={previewLimits.clientEmail}
                     placeholder="cliente@email.com"
                   />
                   <Input
                     label="Telefone"
                     value={clientPhone}
                     onChange={(e) => setClientPhone(formatPhone(e.target.value))}
+                    maxLength={15}
                     placeholder="(00) 00000-0000"
                   />
                   <Input
                     label="Endereço do cliente"
                     value={clientAddress}
-                    onChange={(e) => setClientAddress(e.target.value)}
+                    onChange={(e) =>
+                      setClientAddress(
+                        clampTextToLimit(e.target.value, previewLimits.clientAddress)
+                      )
+                    }
+                    maxLength={previewLimits.clientAddress}
                     placeholder="Endereço completo do cliente"
                   />
                 </div>
@@ -854,6 +1049,7 @@ export default function CreateBudgetPage() {
                               updateItem(i, "description", e.target.value)
                             }
                             className={`${inputBase} py-2`}
+                            maxLength={previewLimits.itemDescription}
                             placeholder="Descrição do item"
                           />
                         </div>
@@ -970,10 +1166,11 @@ export default function CreateBudgetPage() {
                 </label>
                 <textarea
                   value={observation}
-                  onChange={(e) => setObservation(e.target.value)}
-                  rows={4}
-                  className={`${inputBase} resize-none overflow-hidden`}
-                  style={{ height: '96px' }}
+                  onChange={(e) =>
+                    setObservation(normalizeObservationInput(e.target.value, observationMaxLines))
+                  }
+                  rows={8}
+                  className={`${inputBase} resize-none`}
                   placeholder="Observações adicionais"
                 />
               </div>
@@ -986,19 +1183,26 @@ export default function CreateBudgetPage() {
                   <Input
                     label="Endereço"
                     value={companyAddress}
-                    onChange={(e) => setCompanyAddress(e.target.value)}
+                    onChange={(e) =>
+                      setCompanyAddress(
+                        clampTextToLimit(e.target.value, previewLimits.companyAddress)
+                      )
+                    }
+                    maxLength={previewLimits.companyAddress}
                     placeholder="Endereço completo"
                   />
                   <Input
                     label="Telefone"
                     value={companyPhone}
                     onChange={(e) => setCompanyPhone(formatPhone(e.target.value))}
+                    maxLength={15}
                     placeholder="(00) 00000-0000"
                   />
                   <Input
                     label="CNPJ"
                     value={companyCnpj}
                     onChange={(e) => setCompanyCnpj(formatCnpj(e.target.value))}
+                    maxLength={18}
                     placeholder="00.000.000/0000-00"
                   />
                 </div>
@@ -1031,30 +1235,7 @@ export default function CreateBudgetPage() {
         {/* Prévia - mobile */}
         {activeView === 'preview' && (
           <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 h-full">
-            {layout && (
-              <BudgetPdfPreview
-                companyLogoUrl={companyLogoUrl}
-                companyName={companyName}
-                companyAddress={companyAddress}
-                companyPhone={companyPhone}
-                companyCnpj={companyCnpj}
-                documentDate={documentDate}
-                clientName={clientName}
-                clientPhone={clientPhone}
-                clientEmail={clientEmail}
-                clientAddress={clientAddress}
-                title={title}
-                items={items}
-                total={items.reduce((acc, item) => acc + item.quantity * item.unitPrice, 0)}
-                validityDays={validityDays}
-                observation={observation}
-                fontColor={previewFontColor}
-                backgroundColor={previewBgColor}
-                gridColor={previewGridColor}
-                templateId={templateId}
-                layout={layout}
-              />
-            )}
+            {renderPreviewContent()}
           </div>
         )}
       </div>
@@ -1176,7 +1357,12 @@ export default function CreateBudgetPage() {
           <Input
             label="Nome da empresa"
             value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
+            onChange={(e) =>
+              setCompanyName(
+                clampTextToLimit(e.target.value, previewLimits.companyName)
+              )
+            }
+            maxLength={previewLimits.companyName}
             placeholder="Sua empresa"
           />
 
@@ -1199,7 +1385,12 @@ export default function CreateBudgetPage() {
               <Input
                 label="Nome"
                 value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
+                onChange={(e) =>
+                  setClientName(
+                    clampTextToLimit(e.target.value, previewLimits.clientName)
+                  )
+                }
+                maxLength={previewLimits.clientName}
                 placeholder="Nome do cliente"
                 required
               />
@@ -1207,19 +1398,30 @@ export default function CreateBudgetPage() {
                 label="E-mail"
                 type="email"
                 value={clientEmail}
-                onChange={(e) => setClientEmail(e.target.value)}
+                onChange={(e) =>
+                  setClientEmail(
+                    clampTextToLimit(e.target.value, previewLimits.clientEmail)
+                  )
+                }
+                maxLength={previewLimits.clientEmail}
                 placeholder="cliente@email.com"
               />
               <Input
                 label="Telefone"
                 value={clientPhone}
                 onChange={(e) => setClientPhone(formatPhone(e.target.value))}
+                maxLength={15}
                 placeholder="(00) 00000-0000"
               />
               <Input
                 label="Endereço do cliente"
                 value={clientAddress}
-                onChange={(e) => setClientAddress(e.target.value)}
+                onChange={(e) =>
+                  setClientAddress(
+                    clampTextToLimit(e.target.value, previewLimits.clientAddress)
+                  )
+                }
+                maxLength={previewLimits.clientAddress}
                 placeholder="Endereço completo do cliente"
               />
             </div>
@@ -1244,6 +1446,7 @@ export default function CreateBudgetPage() {
                           updateItem(i, "description", e.target.value)
                         }
                         className={`${inputBase} py-2`}
+                        maxLength={previewLimits.itemDescription}
                         placeholder="Descrição do item"
                       />
                     </div>
@@ -1358,10 +1561,11 @@ export default function CreateBudgetPage() {
             </label>
             <textarea
               value={observation}
-              onChange={(e) => setObservation(e.target.value)}
-              rows={4}
-              className={`${inputBase} resize-none overflow-hidden`}
-              style={{ height: '96px' }}
+              onChange={(e) =>
+                setObservation(normalizeObservationInput(e.target.value, observationMaxLines))
+              }
+              rows={8}
+              className={`${inputBase} resize-none`}
               placeholder="Observações adicionais"
             />
           </div>
@@ -1374,19 +1578,26 @@ export default function CreateBudgetPage() {
               <Input
                 label="Endereço"
                 value={companyAddress}
-                onChange={(e) => setCompanyAddress(e.target.value)}
+                onChange={(e) =>
+                  setCompanyAddress(
+                    clampTextToLimit(e.target.value, previewLimits.companyAddress)
+                  )
+                }
+                maxLength={previewLimits.companyAddress}
                 placeholder="Endereço completo"
               />
               <Input
                 label="Telefone"
                 value={companyPhone}
                 onChange={(e) => setCompanyPhone(formatPhone(e.target.value))}
+                maxLength={15}
                 placeholder="(00) 00000-0000"
               />
               <Input
                 label="CNPJ"
                 value={companyCnpj}
                 onChange={(e) => setCompanyCnpj(formatCnpj(e.target.value))}
+                maxLength={18}
                 placeholder="00.000.000/0000-00"
               />
             </div>
@@ -1423,30 +1634,7 @@ export default function CreateBudgetPage() {
             Prévia (formato do PDF)
           </h2>
           <div className="min-h-0 flex-1 overflow-hidden">
-            {layout && (
-              <BudgetPdfPreview
-                companyLogoUrl={companyLogoUrl}
-                companyName={companyName}
-                companyAddress={companyAddress}
-                companyPhone={companyPhone}
-                companyCnpj={companyCnpj}
-                documentDate={documentDate}
-                clientName={clientName}
-                clientPhone={clientPhone}
-                clientEmail={clientEmail}
-                clientAddress={clientAddress}
-                title={title}
-                items={items}
-                total={totalCalculado}
-                validityDays={validityDays}
-                observation={observation}
-                fontColor={previewFontColor}
-                backgroundColor={previewBgColor}
-                gridColor={previewGridColor}
-                templateId={templateId}
-                layout={layout}
-              />
-            )}
+            {renderPreviewContent()}
           </div>
         </div>
         <div className="flex min-h-0 w-52 shrink-0 flex-col overflow-hidden">
@@ -1461,13 +1649,13 @@ export default function CreateBudgetPage() {
                 colors={fontColors}
               />
               <ColorPaletteRow
-                label={templateId === "moderno" ? "Fundo" : "Grade"}
+                label={isModernLikeTemplate ? "Fundo" : "Grade"}
                 value={previewGridColor}
                 onChange={setPreviewGridColor}
                 colors={gridColors}
               />
               <ColorPaletteRow
-                label={templateId === "moderno" ? "Grade" : "Fundo"}
+                label={isModernLikeTemplate ? "Grade" : "Fundo"}
                 value={previewBgColor}
                 onChange={setPreviewBgColor}
                 colors={backgroundColors}
@@ -1495,18 +1683,30 @@ export default function CreateBudgetPage() {
                     name="templateId"
                     value="moderno"
                     checked={templateId === "moderno"}
-                    disabled={!canUsePremiumTemplates}
                     onChange={() => setTemplateId("moderno")}
                     className="h-4 w-4 rounded border-zinc-300 text-primary-600 focus:ring-primary-500"
                   />
-                  <span className={!canUsePremiumTemplates ? "text-zinc-400" : ""}>
-                    {canUsePremiumTemplates ? "Moderno" : "Moderno (Pro)"}
+                  <span>
+                    {canUsePremiumTemplates ? "Moderno" : "Moderno (visualizar)"}
+                  </span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="templateId"
+                    value="profissional"
+                    checked={templateId === "profissional"}
+                    onChange={() => setTemplateId("profissional")}
+                    className="h-4 w-4 rounded border-zinc-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span>
+                    {canUsePremiumTemplates ? "Profissional" : "Profissional (visualizar)"}
                   </span>
                 </label>
               </div>
               {!canUsePremiumTemplates && (
                 <p className="mt-3 text-xs font-medium text-amber-700">
-                  Faça upgrade para o plano Pro para liberar templates premium.
+                  No plano Free, você pode visualizar os templates premium, mas só o plano Pro pode criar orçamentos com eles.
                 </p>
               )}
             </div>
@@ -1518,11 +1718,17 @@ export default function CreateBudgetPage() {
     <Modal
       isOpen={showFreeUpgradeModal}
       onClose={handleFreeUpgradeAcknowledge}
-      title="Limite do plano Free atingido"
+      title={
+        freeUpgradeModalReason === "premium-template"
+          ? "Template premium indisponível no plano Free"
+          : "Limite do plano Free atingido"
+      }
     >
       <div className="space-y-4">
         <p className="text-sm leading-6 text-zinc-600">
-          Você já utilizou o limite de criação do plano Free. Com o plano Pro, você libera criação ilimitada de orçamentos e acesso completo aos templates premium.
+          {freeUpgradeModalReason === "premium-template"
+            ? "No plano Free, os templates moderno e profissional podem ser visualizados na prévia, mas a criação do orçamento com eles é exclusiva do plano Pro."
+            : "Você já utilizou o limite de criação do plano Free. Com o plano Pro, você libera criação ilimitada de orçamentos e acesso completo aos templates premium."}
         </p>
         <p className="text-sm font-medium text-zinc-700">
           Fale com o administrador para ativar seu plano Pro e continuar criando sem bloqueios.

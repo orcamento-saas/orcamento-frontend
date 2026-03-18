@@ -78,6 +78,34 @@ export interface CreateBudgetBody {
   templateId?: string;
 }
 
+export interface BudgetPreviewHtmlBody {
+  title?: string;
+  description?: string;
+  value?: number;
+  companyLogoUrl?: string;
+  companyName?: string;
+  companyAddress?: string;
+  companyPhone?: string;
+  companyCnpj?: string;
+  clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  documentDate?: string;
+  validityDays?: number;
+  validityDate?: string;
+  observation?: string;
+  items?: BudgetItem[];
+  fontColor?: string;
+  backgroundColor?: string;
+  gridColor?: string;
+  templateId?: string;
+}
+
+export interface BudgetPreviewHtmlResponse {
+  html: string;
+}
+
 export interface SignBudgetBody {
   clientName: string;
   clientEmail?: string;

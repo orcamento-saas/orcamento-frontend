@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { getBudget, generatePdf, deleteBudget } from "@/services/budgets";
+import { getBudget, generatePdf, deleteBudget, getBudgetPreviewHtml } from "@/services/budgets";
 import type { Budget } from "@/types/budget";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { ShareBudget } from "@/components/ShareBudget";
-import { BudgetPdfPreview } from "@/components/BudgetPdfPreview";
+import { BackendTemplatePreview } from "@/components/BackendTemplatePreview";
 import type { ApiError } from "@/lib/api";
 import {
   type BudgetLayoutConfig,
@@ -56,14 +56,9 @@ export default function DashboardBudgetPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [layout, setLayout] = useState<BudgetLayoutConfig | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 640);
-    const handleResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const [backendPreviewHtml, setBackendPreviewHtml] = useState("");
+  const [backendPreviewLoading, setBackendPreviewLoading] = useState(false);
+  const [backendPreviewError, setBackendPreviewError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!accessToken || !id) return;
@@ -87,6 +82,65 @@ export default function DashboardBudgetPage() {
       .catch(() => {
         if (!cancelled) setLayout(null);
       });
+    return () => {
+      cancelled = true;
+    };
+  }, [budget]);
+
+  useEffect(() => {
+    if (!budget) {
+      setBackendPreviewHtml("");
+      setBackendPreviewLoading(false);
+      setBackendPreviewError(null);
+      return;
+    }
+
+    let cancelled = false;
+    const documentDate = formatDocumentDate(budget.documentDate);
+
+    setBackendPreviewLoading(true);
+    setBackendPreviewError(null);
+
+    getBudgetPreviewHtml({
+      title: budget.title,
+      description: budget.description ?? "",
+      value: budget.value,
+      companyLogoUrl: budget.companyLogoUrl ?? "",
+      companyName: budget.companyName ?? "",
+      companyAddress: budget.companyAddress ?? "",
+      companyPhone: budget.companyPhone ?? "",
+      companyCnpj: budget.companyCnpj ?? "",
+      clientName: budget.clientName ?? "",
+      clientEmail: budget.clientEmail ?? "",
+      clientPhone: budget.clientPhone ?? "",
+      clientAddress: budget.clientAddress ?? "",
+      documentDate,
+      validityDays: budget.validityDays ?? 0,
+      observation: budget.observation ?? "",
+      items: budget.items ?? [],
+      fontColor: budget.fontColor ?? "#18181b",
+      backgroundColor: budget.backgroundColor ?? "#ffffff",
+      gridColor: budget.gridColor ?? "#000000",
+      templateId: budget.templateId,
+    })
+      .then((response) => {
+        if (!cancelled) {
+          setBackendPreviewHtml(response.html);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setBackendPreviewError(
+            "Não foi possível carregar a prévia do template selecionado."
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setBackendPreviewLoading(false);
+        }
+      });
+
     return () => {
       cancelled = true;
     };
@@ -190,29 +244,11 @@ export default function DashboardBudgetPage() {
       <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-zinc-200 bg-zinc-100 p-1 sm:p-4">
         {layout && (
           <div className="h-full min-h-[300px] w-full overflow-hidden">
-            <BudgetPdfPreview
-              companyLogoUrl={budget.companyLogoUrl ?? ""}
-              companyName={budget.companyName ?? ""}
-              companyAddress={budget.companyAddress ?? ""}
-              companyPhone={budget.companyPhone ?? ""}
-              companyCnpj={budget.companyCnpj ?? ""}
-              documentDate={documentDate}
-              clientName={budget.clientName ?? ""}
-              clientPhone={budget.clientPhone ?? ""}
-              clientEmail={budget.clientEmail ?? ""}
-              clientAddress={budget.clientAddress ?? ""}
-              title={budget.title}
-              items={budget.items ?? []}
-              total={budget.value}
-              validityDays={validityDays}
-              observation={budget.observation ?? ""}
-              fontColor={budget.fontColor ?? "#18181b"}
-              backgroundColor={budget.backgroundColor ?? "#ffffff"}
-              gridColor={budget.gridColor ?? "#000000"}
-              templateId={budget.templateId ?? "simples"}
-              minScale={isMobile ? 0.3 : 0.6}
-              showLens={false}
-              layout={layout}
+            <BackendTemplatePreview
+              html={backendPreviewHtml}
+              loading={backendPreviewLoading}
+              error={backendPreviewError}
+              title={`Prévia do template ${budget.templateId ?? "simples"}`}
             />
           </div>
         )}
