@@ -121,7 +121,7 @@ export default function DashboardBudgetPage() {
       fontColor: budget.fontColor ?? "#18181b",
       backgroundColor: budget.backgroundColor ?? "#ffffff",
       gridColor: budget.gridColor ?? "#000000",
-      templateId: budget.templateId,
+      templateId: budget.templateId ?? undefined,
     })
       .then((response) => {
         if (!cancelled) {
