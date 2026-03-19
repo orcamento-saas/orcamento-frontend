@@ -401,7 +401,10 @@ export default function AdminPage() {
   return (
     <AdminGuard>
       <div className="flex h-full min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto py-2 pr-1">
-        <div className="flex flex-wrap gap-4 items-start">
+        <h1 className="mt-2 text-center text-xl font-bold text-zinc-900 sm:mt-0 sm:text-left">
+          Administração
+        </h1>
+        <div className="flex flex-col items-center gap-3 md:flex-row md:items-start md:gap-4">
           <div className="inline-flex w-fit rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm">
             <button
               type="button"
@@ -423,13 +426,13 @@ export default function AdminPage() {
             </button>
           </div>
 
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 flex-1">
+          <section className="grid w-full grid-cols-2 gap-3 md:flex-1 md:grid-cols-2 xl:grid-cols-4">
             {activeTab === "users" ? (
               <>
                 <SummaryTile label="Usuarios" value={total} tone="slate" />
+                <SummaryTile label="Suspenso" value={stats.suspended} tone="rose" />
                 <SummaryTile label="Free" value={stats.free} tone="amber" />
                 <SummaryTile label="Pro" value={stats.pro} tone="emerald" />
-                <SummaryTile label="Suspenso" value={stats.suspended} tone="rose" />
               </>
             ) : (
               <>
@@ -579,17 +582,26 @@ export default function AdminPage() {
                                   Motivo: {user.suspendedReason}
                                 </p>
                               )}
+
+                              {/* Mobile: plano + status + quantidade lado a lado */}
+                              <div className="mt-3 flex items-center gap-2 lg:hidden">
+                                <PlanBadge plan={user.plan} />
+                                <StatusBadge suspended={user.suspended} />
+                                <span className="inline-flex rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-700">
+                                  {user.budgetsCount}
+                                </span>
+                              </div>
                             </div>
 
-                            <div className="flex items-center lg:justify-start">
+                            <div className="hidden lg:flex lg:items-center lg:justify-start">
                               <PlanBadge plan={user.plan} />
                             </div>
 
-                            <div className="flex items-center lg:justify-start">
+                            <div className="hidden lg:flex lg:items-center lg:justify-start">
                               <StatusBadge suspended={user.suspended} />
                             </div>
 
-                            <div className="text-sm font-medium text-zinc-700">
+                            <div className="hidden text-sm font-medium text-zinc-700 lg:block">
                               {user.budgetsCount}
                             </div>
 
@@ -640,10 +652,16 @@ export default function AdminPage() {
                     <li key={event.id} className="px-5 py-4">
                       <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[180px_140px_180px_220px_140px] lg:items-start">
                         <p className="text-xs text-zinc-500">{formatDateTime(event.createdAt)}</p>
-                        <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${event.severity === "ERROR" ? "bg-red-100 text-red-700" : event.severity === "WARN" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                        <div className="flex items-center gap-2 lg:hidden">
+                          <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${event.severity === "ERROR" ? "bg-red-100 text-red-700" : event.severity === "WARN" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                            {event.severity}
+                          </span>
+                          <p className="text-xs font-semibold text-zinc-700">{event.type}</p>
+                        </div>
+                        <span className={`hidden lg:inline-flex w-fit rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${event.severity === "ERROR" ? "bg-red-100 text-red-700" : event.severity === "WARN" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
                           {event.severity}
                         </span>
-                        <p className="text-xs font-semibold text-zinc-700">{event.type}</p>
+                        <p className="hidden lg:block text-xs font-semibold text-zinc-700">{event.type}</p>
                         <p className="text-xs text-zinc-600">{event.actor?.email ?? "Sistema"}</p>
                         <p className="text-xs text-zinc-500">{event.statusCode ?? "Status não disponível"}</p>
                       </div>

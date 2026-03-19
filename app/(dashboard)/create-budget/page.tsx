@@ -775,7 +775,7 @@ export default function CreateBudgetPage() {
       {/* Layout Mobile com dropdowns no topo - apenas mobile */}
       <div className="flex lg:hidden min-h-0 flex-1 w-full flex-col overflow-hidden h-screen">
         {/* Título - mobile */}
-        <h1 className="mb-2 pt-0 mt-0 text-left text-lg font-semibold text-zinc-800 shrink-0">
+        <h1 className="mb-2 mt-2 pt-0 text-center text-xl font-bold text-zinc-900 shrink-0 sm:mt-0 sm:text-left">
           Novo orçamento
         </h1>
         

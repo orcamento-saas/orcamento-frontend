@@ -110,9 +110,11 @@ export default function PlansPage() {
       <div className="flex w-full flex-col justify-center px-5 pt-1 pb-8 sm:px-8 sm:py-8 lg:w-1/2 lg:px-12 lg:py-12">
         <div className="mx-auto w-full max-w-3xl">
           <div className="mb-2 md:mb-8 text-center">
-            <p className="text-sm font-medium uppercase tracking-[0.25em] text-teal-700 lg:hidden">
-              Orçamento já
-            </p>
+            <img
+              src="/plan/logo.png"
+              alt="Logo"
+              className="mx-auto h-10 w-auto max-w-[180px] object-contain lg:hidden"
+            />
             <img
               src="/plan/logo.png"
               alt="Logo"

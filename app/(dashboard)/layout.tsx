@@ -38,7 +38,6 @@ export default function DashboardLayout({
     user?.email ||
     "Usuário";
 
-  const userEmail = account?.email ?? user?.email ?? "usuario@email.com";
   const planLabel = plan === "PRO" ? "Pro" : "Free";
 
   const userInitials = userDisplayName
@@ -187,9 +186,9 @@ export default function DashboardLayout({
               </div>
               {!collapsed && (
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-medium text-white/90">{userEmail}</p>
+                  <p className="truncate text-xs font-medium text-white/90">{userDisplayName}</p>
                   <p className="mt-1 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
-                    {planLabel}
+                    Plano {planLabel}
                   </p>
                 </div>
               )}
@@ -201,13 +200,13 @@ export default function DashboardLayout({
         {/* Container principal com header mobile */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* Header mobile - apenas mobile */}
-          <header className="relative flex lg:hidden shrink-0 items-center justify-between border-b border-white/20 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 px-4 py-3 z-50">
-            <div className="min-w-0 flex-1 shrink-0 overflow-hidden whitespace-nowrap pr-2">
-              <span className="text-[12px] font-semibold text-white/90">Bem vindo</span>
-              <span className="text-[12px] text-white/40"> , </span>
-              <span className="text-[11px] font-medium text-white overflow-hidden whitespace-nowrap">
-                {userDisplayName}
-              </span>
+          <header className="relative flex h-14 lg:hidden shrink-0 items-center justify-between border-b border-white/20 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 px-4 overflow-visible z-50">
+            <div className="min-w-0 flex-1">
+              <img
+                src="/plan/logo1.png"
+                alt="Logo"
+                className="h-8 w-auto max-w-[180px] object-contain"
+              />
             </div>
             <div className="flex items-center gap-1">
               <NotificationButton unseenCount={unseenCount} onClick={handleOpenNotifications} animate={bellAnimate} />
@@ -268,9 +267,9 @@ export default function DashboardLayout({
                       {userInitials}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-medium text-white/90">{userEmail}</p>
+                      <p className="truncate text-xs font-medium text-white/90">{userDisplayName}</p>
                       <p className="mt-1 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
-                        {planLabel}
+                        Plano {planLabel}
                       </p>
                     </div>
                   </div>

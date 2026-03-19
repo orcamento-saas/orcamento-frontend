@@ -187,8 +187,8 @@ export default function MyBudgetsPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="mb-4 shrink-0">
-        <h1 className="text-2xl font-bold text-zinc-900">Meus orçamentos</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <h1 className="mt-2 text-center text-xl font-bold text-zinc-900 sm:mt-0 sm:text-left">Meus orçamentos</h1>
+        <p className="mt-1 text-center text-sm text-zinc-500 sm:text-left">
           {total} {total === 1 ? "orçamento" : "orçamentos"} no total
         </p>
       </div>
