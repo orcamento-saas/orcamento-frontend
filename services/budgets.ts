@@ -8,10 +8,17 @@ import type {
   NotificationsSummaryResponse,
   BudgetPreviewHtmlBody,
   BudgetPreviewHtmlResponse,
+  BudgetCardListResponse,
 } from "@/types/budget";
 
 const BUDGETS = "budgets";
 const PUBLIC_BUDGET = "public/budget";
+
+// Dedupe de requests em voo para evitar GET /budgets duplicado
+const inFlight = new Map<string, Promise<unknown>>();
+// Cache curto por path para sobreviver a refresh de token
+const localCache = new Map<string, { data: unknown; timestamp: number }>();
+const LOCAL_CACHE_MS = 30000;
 
 export async function getBudgets(
   token: string,
@@ -22,7 +29,58 @@ export async function getBudgets(
   if (params?.page != null) sp.set("page", String(params.page));
   if (params?.limit != null) sp.set("limit", String(params.limit));
   const q = sp.toString();
-  return apiGet<BudgetListResponse>(`${BUDGETS}${q ? `?${q}` : ""}`, token);
+  const path = `${BUDGETS}${q ? `?${q}` : ""}`;
+  const key = `GET:${path}`;
+
+  const cached = localCache.get(key);
+  if (cached && Date.now() - cached.timestamp < LOCAL_CACHE_MS) {
+    return cached.data as BudgetListResponse;
+  }
+
+  const existing = inFlight.get(key);
+  if (existing) {
+    return existing as Promise<BudgetListResponse>;
+  }
+  const req = apiGet<BudgetListResponse>(path, token)
+    .then((data) => {
+      localCache.set(key, { data, timestamp: Date.now() });
+      return data;
+    });
+  inFlight.set(key, req);
+  req.finally(() => inFlight.delete(key));
+  return req;
+}
+
+export async function getBudgetCards(
+  token: string,
+  params?: { status?: "DRAFT" | "SENT" | "SIGNED"; page?: number; limit?: number }
+): Promise<BudgetCardListResponse> {
+  const sp = new URLSearchParams();
+  if (params?.status) sp.set("status", params.status);
+  if (params?.page != null) sp.set("page", String(params.page));
+  if (params?.limit != null) sp.set("limit", String(params.limit));
+  const q = sp.toString();
+  const path = `${BUDGETS}/cards${q ? `?${q}` : ""}`;
+  const key = `GET:${path}`;
+
+  const cached = localCache.get(key);
+  if (cached && Date.now() - cached.timestamp < LOCAL_CACHE_MS) {
+    return cached.data as BudgetCardListResponse;
+  }
+
+  const existing = inFlight.get(key);
+  if (existing) {
+    return existing as Promise<BudgetCardListResponse>;
+  }
+
+  const req = apiGet<BudgetCardListResponse>(path, token).then((data) => {
+    localCache.set(key, { data, timestamp: Date.now() });
+    return data;
+  });
+
+  inFlight.set(key, req);
+  req.finally(() => inFlight.delete(key));
+  return req;
 }
 
 export async function getBudget(id: string, token: string): Promise<Budget> {

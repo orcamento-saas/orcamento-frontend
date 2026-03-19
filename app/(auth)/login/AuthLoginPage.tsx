@@ -55,7 +55,11 @@ export function AuthLoginPage() {
   const searchParams = useSearchParams();
   const supabase = createClient();
 
-  const [mode, setMode] = useState<Mode>("login");
+  // Garante que ao abrir /login?mode=register a tela já venha em "Criar conta"
+  const [mode, setMode] = useState<Mode>(() => {
+    const qpMode = searchParams.get("mode");
+    return qpMode === "register" || qpMode === "login" ? qpMode : "login";
+  });
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -68,23 +72,45 @@ export function AuthLoginPage() {
 
   const pdfFeatures = [
     {
-      title: "Crie Orçamentos Profissionais",
-      description: "Transforme suas propostas em PDFs elegantes e personalizáveis com a identidade da sua empresa.",
-      highlight: "Ilimitados",
-      value: "PDFs gerados"
+      title: "Crie orçamentos em poucos minutos",
+      description:
+        "Preencha apenas o essencial: cliente, itens e valores. O PDF profissional é gerado automaticamente.",
+      highlight: "",
+      value: "",
+      imageSrc: "/plan/1%20imagem.png",
     },
     {
-      title: "Gestão Completa de Clientes",
-      description: "Organize seus clientes, acompanhe o status de cada orçamento e nunca perca uma oportunidade.",
-      highlight: "100%",
-      value: "Organizado"
+      title: "Envie e acompanhe em um só lugar",
+      description:
+        "Visualize o status de cada orçamento, saiba quais foram assinados e marque os executados.",
+      highlight: "",
+      value: "",
+      imageSrc: "/plan/2%20imagem.png",
     },
     {
-      title: "Assinatura Digital Integrada",
-      description: "Seus clientes podem assinar os orçamentos diretamente no sistema, agilizando todo o processo.",
-      highlight: "Digital",
-      value: "Assinatura"
-    }
+      title: "Evolua para o Pro quando fizer sentido",
+      description:
+        "Desbloqueie templates premium e geração ilimitada de PDFs quando seu volume de orçamentos crescer.",
+      highlight: "",
+      value: "",
+      imageSrc: "/plan/3%20imagem.png",
+    },
+    {
+      title: "Acompanhe a evolução dos seus orçamentos",
+      description:
+        "Veja em um dashboard prático e simples como estão os orçamentos enviados, assinados e concluídos ao longo do tempo.",
+      highlight: "",
+      value: "",
+      imageSrc: "/plan/4%20imagem.png",
+    },
+    {
+      title: "Assinatura digital sem complicação",
+      description:
+        "Seus clientes assinam o orçamento de forma online, sem burocracia e sem precisar instalar nada, acelerando o fechamento das propostas.",
+      highlight: "",
+      value: "",
+      imageSrc: "/plan/5%20imagem.png",
+    },
   ];
 
   useEffect(() => {
@@ -97,7 +123,7 @@ export function AuthLoginPage() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % pdfFeatures.length);
-    }, 4000);
+    }, 8000);
     return () => clearInterval(interval);
   }, [pdfFeatures.length]);
 
@@ -163,66 +189,53 @@ export function AuthLoginPage() {
 
   return (
     <div className="flex min-h-[100svh] flex-col bg-gray-50 overflow-hidden lg:min-h-screen lg:flex-row">
-      {/* Topo mobile: informações */}
-      <div className="flex h-[44svh] flex-col justify-center bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 px-5 py-6 text-center text-white lg:hidden">
-        <h1 className="text-3xl font-bold tracking-tight">Orçamento já</h1>
-        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-white/85">
-          A solução completa para geração de PDFs profissionais e gestão de orçamentos
-        </p>
-
-        <div className="mt-5 rounded-xl bg-white/12 p-4 backdrop-blur-sm">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/70">Recursos</p>
-          <p key={currentSlide} className="mt-2 text-lg font-semibold leading-snug">
-            {pdfFeatures[currentSlide].title}
-          </p>
-        </div>
-
-        <div className="mt-4 flex justify-center space-x-2">
-          {pdfFeatures.map((_, index) => (
-            <div
-              key={index}
-              className={`h-2 w-2 rounded-full transition-all duration-300 ${
-                index === currentSlide ? "bg-white" : "bg-white/40"
-              }`}
-            />
-          ))}
-        </div>
+      {/* Topo mobile: logo (login e criar conta iguais) */}
+      <div className="flex w-full flex-col items-center justify-start px-5 pt-0 pb-0 text-center lg:hidden -mt-6">
+        <img
+          src="/plan/logo.png"
+          alt="Logo"
+          className="mx-auto mt-0 mb-0 h-[220px] w-[220px] object-contain"
+        />
       </div>
 
       {/* Lado esquerdo: informações e recursos */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 relative">
         <div className="flex flex-col justify-center items-center w-full px-8 py-16">
-          {/* Título no topo centralizado */}
-          <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
-            <h1 className="text-3xl font-bold text-white tracking-wide">
-              <span className="bg-gradient-to-r from-white to-green-200 bg-clip-text text-transparent">
-                Orçamento já
-              </span>
-            </h1>
-          </div>
 
           {/* Main content - centralizado */}
           <div className="max-w-md mx-auto text-center">
             {/* Feature card animado */}
-            <div className="bg-gray-50 rounded-2xl p-8 mb-8 min-h-[280px] flex flex-col justify-center transition-all duration-500">
+            <div className="bg-transparent rounded-2xl p-8 mb-8 min-h-[280px] flex flex-col justify-center transition-all duration-2000">
               <div className="mb-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-3">
+                <img
+                  src={pdfFeatures[currentSlide].imageSrc}
+                  alt=""
+                  className="mx-auto mb-4 h-28 w-28 rounded-3xl object-cover"
+                />
+                <h3 className="text-xl font-bold text-white mb-3">
                   {pdfFeatures[currentSlide].title}
                 </h3>
-                <p className="text-gray-700 text-sm leading-relaxed">
+                <p className="text-white/90 text-sm leading-relaxed">
                   {pdfFeatures[currentSlide].description}
                 </p>
               </div>
               
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-center justify-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    <span className="text-gray-600 text-sm">{pdfFeatures[currentSlide].value}</span>
+              {(pdfFeatures[currentSlide].value ||
+                pdfFeatures[currentSlide].highlight) && (
+                <div className="mt-4 pt-4 border-t-0">
+                  <div className="flex items-center justify-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <span className="text-white/80 text-sm">
+                        {pdfFeatures[currentSlide].value}
+                      </span>
+                    </div>
+                    <span className="text-white font-semibold">
+                      {pdfFeatures[currentSlide].highlight}
+                    </span>
                   </div>
-                  <span className="text-gray-800 font-semibold">{pdfFeatures[currentSlide].highlight}</span>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Descrição da aplicação */}
@@ -237,7 +250,7 @@ export function AuthLoginPage() {
               {pdfFeatures.map((_, index) => (
                 <div
                   key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  className={`w-2 h-2 rounded-full transition-all duration-700 ${
                     index === currentSlide ? 'bg-white' : 'bg-white/40'
                   }`}
                 />
@@ -248,14 +261,21 @@ export function AuthLoginPage() {
       </div>
 
       {/* Lado direito: formulário de login */}
-      <div className="flex h-[56svh] w-full flex-col justify-center px-5 py-5 sm:px-8 sm:py-8 lg:h-auto lg:w-1/2 lg:px-16 lg:py-12">
+      <div className="flex flex-1 w-full flex-col justify-center px-5 pt-0 pb-4 sm:px-8 sm:py-8 lg:flex-none lg:h-auto lg:w-1/2 lg:px-16 lg:py-1 lg:justify-start">
         <div className="mx-auto w-full max-w-sm">
           {/* Título */}
-          <div className="mb-4">
+          <div className="mb-1">
+            <img
+              src="/plan/logo.png"
+              alt="Logo"
+              className={`mx-auto mb-0 hidden h-[300px] w-[300px] object-contain lg:block ${
+                isLogin ? "lg:-mt-3 lg:-mb-6" : "lg:-mt-3 lg:-mb-14"
+              }`}
+            />
             <h2 className="text-2xl font-bold text-gray-900">
               {isLogin ? "Entrar" : "Criar conta"}
             </h2>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-gray-600">
               {isLogin 
                 ? "Não tem uma conta? " 
                 : "Já tem uma conta? "

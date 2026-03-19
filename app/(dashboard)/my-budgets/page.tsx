@@ -3,8 +3,8 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { getBudgets, deleteBudget, updateBudgetExecuted } from "@/services/budgets";
-import type { Budget } from "@/types/budget";
+import { getBudgetCards, deleteBudget, updateBudgetExecuted } from "@/services/budgets";
+import type { Budget, BudgetCard } from "@/types/budget";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
@@ -45,7 +45,7 @@ function formatDateShort(iso: string): string {
 }
 
 /** Exibe a data do documento ou data de criação como fallback */
-function getDisplayDate(budget: Budget): string {
+function getDisplayDate(budget: BudgetCard): string {
   if (budget.documentDate) {
     // Usa a mesma lógica do BudgetPdfPreview para evitar problemas de timezone
     const dateStr = budget.documentDate;
@@ -61,13 +61,27 @@ function getDisplayDate(budget: Budget): string {
   return formatDateShort(budget.createdAt);
 }
 
-function matchesSearch(b: Budget, search: string): boolean {
+function matchesSearch(b: BudgetCard, search: string): boolean {
   if (!search.trim()) return true;
   const q = search.trim().toLowerCase();
   const title = (b.title ?? "").toLowerCase();
-  const description = (b.description ?? "").toLowerCase();
   const clientName = (b.clientName ?? "").toLowerCase();
-  return title.includes(q) || description.includes(q) || clientName.includes(q);
+  return title.includes(q) || clientName.includes(q);
+}
+
+function budgetToCard(b: Budget): BudgetCard {
+  return {
+    id: b.id,
+    title: b.title,
+    value: b.value,
+    status: b.status,
+    executed: b.executed,
+    pdfUrl: b.pdfUrl,
+    signedPdfUrl: b.signedPdfUrl,
+    createdAt: b.createdAt,
+    documentDate: b.documentDate ?? null,
+    clientName: b.clientName ?? null,
+  };
 }
 
 const btnBase =
@@ -101,7 +115,7 @@ const IconExcluir = () => (
 
 export default function MyBudgetsPage() {
   const { accessToken } = useAuth();
-  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [budgets, setBudgets] = useState<BudgetCard[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,7 +130,7 @@ export default function MyBudgetsPage() {
 
   useEffect(() => {
     if (!accessToken) return;
-    getBudgets(accessToken)
+    getBudgetCards(accessToken, { page: 1, limit: 100 })
       .then((res) => {
         setBudgets(res.data);
         setTotal(res.total);
@@ -156,7 +170,8 @@ export default function MyBudgetsPage() {
     setUpdatingExecutedId(id);
     try {
       const updated = await updateBudgetExecuted(id, executed, accessToken);
-      setBudgets((prev) => prev.map((b) => (b.id === id ? updated : b)));
+      const updatedCard = budgetToCard(updated);
+      setBudgets((prev) => prev.map((b) => (b.id === id ? updatedCard : b)));
     } catch (err) {
       const e = err as ApiError;
       alert(e.message ?? "Erro ao atualizar execução.");

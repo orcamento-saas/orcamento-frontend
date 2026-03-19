@@ -6,6 +6,19 @@ export interface BudgetItem {
   unitPrice: number;
 }
 
+export interface BudgetCard {
+  id: string;
+  title: string;
+  value: number;
+  status: BudgetStatus;
+  executed: boolean;
+  pdfUrl: string | null;
+  signedPdfUrl: string | null;
+  createdAt: string;
+  documentDate: string | null;
+  clientName: string | null;
+}
+
 export interface Budget {
   id: string;
   userId: string;
@@ -114,6 +127,11 @@ export interface SignBudgetBody {
 
 export interface BudgetListResponse {
   data: Budget[];
+  total: number;
+}
+
+export interface BudgetCardListResponse {
+  data: BudgetCard[];
   total: number;
 }
 

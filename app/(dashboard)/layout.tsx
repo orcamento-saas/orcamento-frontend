@@ -65,7 +65,7 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!accessToken) return;
     loadNotifications();
-    const timer = window.setInterval(loadNotifications, 30000);
+    const timer = window.setInterval(loadNotifications, 300000);
     return () => window.clearInterval(timer);
   }, [accessToken, loadNotifications]);
 
@@ -138,12 +138,6 @@ export default function DashboardLayout({
             {!collapsed ? (
               <>
                 <div className="min-w-0 flex-1" />
-                <Link
-                  href="/dashboard"
-                  className="shrink-0 text-lg font-semibold tracking-tight text-white"
-                >
-                  Orçamento já
-                </Link>
                 <div className="flex min-w-0 flex-1 justify-end">
                   <button
                     type="button"
@@ -208,9 +202,13 @@ export default function DashboardLayout({
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* Header mobile - apenas mobile */}
           <header className="relative flex lg:hidden shrink-0 items-center justify-between border-b border-white/20 bg-gradient-to-br from-teal-600 via-teal-700 to-green-800 px-4 py-3 z-50">
-            <Link href="/dashboard" className="text-lg font-semibold tracking-tight text-white">
-              Orçamento já
-            </Link>
+            <div className="min-w-0 flex-1 shrink-0 overflow-hidden whitespace-nowrap pr-2">
+              <span className="text-[12px] font-semibold text-white/90">Bem vindo</span>
+              <span className="text-[12px] text-white/40"> , </span>
+              <span className="text-[11px] font-medium text-white overflow-hidden whitespace-nowrap">
+                {userDisplayName}
+              </span>
+            </div>
             <div className="flex items-center gap-1">
               <NotificationButton unseenCount={unseenCount} onClick={handleOpenNotifications} animate={bellAnimate} />
               <button
@@ -282,14 +280,21 @@ export default function DashboardLayout({
             </div>
           </header>
 
-          <div className="hidden lg:flex shrink-0 items-center justify-end gap-3 border-b border-zinc-200 bg-white px-6 py-2">
-            <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${plan === "PRO" ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-700"}`}>
-              Plano {planLabel}
-            </span>
-            <p className="text-sm font-medium text-zinc-700">
-              Bem-vindo, <span className="text-zinc-900">{userDisplayName}</span>
-            </p>
-            <NotificationButton unseenCount={unseenCount} onClick={handleOpenNotifications} dark animate={bellAnimate} />
+          <div className="hidden lg:flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-white px-6 overflow-hidden">
+            <img
+              src="/plan/logo.png"
+              alt="Logo"
+              className="h-[148px] w-[148px] shrink-0 object-contain"
+            />
+            <div className="flex items-center justify-end gap-3">
+              <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${plan === "PRO" ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-700"}`}>
+                Plano {planLabel}
+              </span>
+              <p className="text-sm font-medium text-zinc-700">
+                Bem-vindo, <span className="text-zinc-900">{userDisplayName}</span>
+              </p>
+              <NotificationButton unseenCount={unseenCount} onClick={handleOpenNotifications} dark animate={bellAnimate} />
+            </div>
           </div>
 
           <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-0 lg:py-6 sm:px-6">{renderSkeletonForRoute()}</main>
@@ -420,7 +425,7 @@ function MobileNavLink({
   return (
     <button
       onClick={handleClick}
-      className={`flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-all duration-150 hover:scale-[1.02] w-full ${
+      className={`flex items-center justify-start gap-3 rounded-lg px-3 py-3 text-base font-semibold text-left transition-all duration-150 hover:scale-[1.02] w-full ${
         isActive
           ? "bg-white/20 text-white"
           : "text-white/80 hover:bg-white/10 hover:text-white"
@@ -455,7 +460,7 @@ function MobileNavLink({
           <line x1="9" x2="15" y1="15" y2="15" />
         </svg>
       )}
-      <span>{children}</span>
+      <span className="text-left">{children}</span>
     </button>
   );
 }
