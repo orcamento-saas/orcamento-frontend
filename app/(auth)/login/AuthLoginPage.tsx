@@ -67,6 +67,7 @@ export function AuthLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -130,6 +131,7 @@ export function AuthLoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     setLoading(true);
     try {
       const { error: err } = await supabase.auth.signInWithPassword({
@@ -150,6 +152,7 @@ export function AuthLoginPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     const normalizedName = name.trim();
     if (!normalizedName) {
       setError("Nome é obrigatório.");
@@ -165,10 +168,16 @@ export function AuthLoginPage() {
     }
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.signUp({
+      const emailRedirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : undefined;
+
+      const { data, error: err } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          ...(emailRedirectTo ? { emailRedirectTo } : {}),
           data: {
             name: normalizedName,
           },
@@ -178,8 +187,16 @@ export function AuthLoginPage() {
         setError(err.message);
         return;
       }
-      router.push("/dashboard");
-      router.refresh();
+      if (data.session) {
+        router.push("/dashboard");
+        router.refresh();
+        return;
+      }
+
+      setSuccess("Conta criada. Verifique seu e-mail e confirme para entrar.");
+      setMode("login");
+      setPassword("");
+      setConfirmPassword("");
     } finally {
       setLoading(false);
     }
@@ -395,6 +412,12 @@ export function AuthLoginPage() {
             {error && (
               <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 border border-red-200">
                 {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+                {success}
               </div>
             )}
 
