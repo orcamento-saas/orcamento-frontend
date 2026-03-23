@@ -140,6 +140,7 @@ export interface NotificationItem {
   title: string;
   clientName: string | null;
   value: number;
+  signedPdfUrl: string | null;
   signedAt: string;
 }
 

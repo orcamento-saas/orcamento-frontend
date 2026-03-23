@@ -75,6 +75,64 @@ function formatDateTime(value: string | null): string {
   });
 }
 
+function getEventMetadataValue(
+  metadata: unknown,
+  key: string
+): string | null {
+  if (!metadata || typeof metadata !== "object") {
+    return null;
+  }
+
+  const value = (metadata as Record<string, unknown>)[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function getEventSummary(event: AdminSystemEventItem): string {
+  const message = typeof event.message === "string" ? event.message.trim() : "";
+  if (message) {
+    return message;
+  }
+
+  const metadataMessage = getEventMetadataValue(event.metadata, "message");
+  if (metadataMessage) {
+    return metadataMessage;
+  }
+
+  return "Sem detalhes adicionais.";
+}
+
+function getEventContext(event: AdminSystemEventItem): string {
+  const method = event.method?.trim();
+  const route = event.route?.trim();
+
+  if (method && route) {
+    return `${method} ${route}`;
+  }
+  if (route) {
+    return route;
+  }
+  if (method) {
+    return method;
+  }
+  return "-";
+}
+
+function getEventErrorIdentity(event: AdminSystemEventItem): string {
+  const name = getEventMetadataValue(event.metadata, "name");
+  const code = getEventMetadataValue(event.metadata, "code");
+
+  if (name && code) {
+    return `${name} (${code})`;
+  }
+  if (name) {
+    return name;
+  }
+  if (code) {
+    return code;
+  }
+  return "-";
+}
+
 function getErrorMessage(error: unknown, fallback: string): string {
   if (
     typeof error === "object" &&
@@ -541,7 +599,7 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <div className="overflow-hidden rounded-3xl border border-zinc-200">
-                  <div className="hidden grid-cols-[minmax(0,1.7fr)_130px_130px_120px_180px] gap-4 border-b border-zinc-200 bg-zinc-50 px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 lg:grid">
+                  <div className="hidden grid-cols-[minmax(0,1.6fr)_110px_110px_110px_210px] gap-3 border-b border-zinc-200 bg-zinc-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 lg:grid">
                     <span>Usuário</span>
                     <span>Plano</span>
                     <span>Status</span>
@@ -556,7 +614,7 @@ export default function AdminPage() {
 
                       return (
                         <li key={user.id} className="px-5 py-4">
-                          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1.7fr)_130px_130px_120px_180px] lg:items-center">
+                          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1.6fr)_110px_110px_110px_210px] lg:items-center lg:gap-3">
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
                                 <p className="truncate text-sm font-semibold text-zinc-950">
@@ -605,7 +663,7 @@ export default function AdminPage() {
                               {user.budgetsCount}
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-1.5">
                               <Button
                                 variant="secondary"
                                 size="sm"
@@ -640,17 +698,18 @@ export default function AdminPage() {
               </div>
             ) : (
               <div className="overflow-hidden rounded-3xl border border-zinc-200">
-                <div className="hidden grid-cols-[180px_140px_180px_220px_140px] gap-6 border-b border-zinc-200 bg-zinc-50 px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 lg:grid">
+                <div className="hidden grid-cols-[150px_110px_160px_210px_110px_minmax(0,1fr)] gap-3 border-b border-zinc-200 bg-zinc-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 lg:grid">
                   <span>Data</span>
-                  <span>Evento</span>
+                  <span>Severidade</span>
                   <span>Tipo</span>
                   <span>Usuário</span>
                   <span>Status</span>
+                  <span>Descrição</span>
                 </div>
                 <ul className="divide-y divide-zinc-200">
                   {events.map((event) => (
                     <li key={event.id} className="px-5 py-4">
-                      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[180px_140px_180px_220px_140px] lg:items-start">
+                      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[150px_110px_160px_210px_110px_minmax(0,1fr)] lg:items-start lg:gap-3">
                         <p className="text-xs text-zinc-500">{formatDateTime(event.createdAt)}</p>
                         <div className="flex items-center gap-2 lg:hidden">
                           <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${event.severity === "ERROR" ? "bg-red-100 text-red-700" : event.severity === "WARN" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
@@ -658,12 +717,25 @@ export default function AdminPage() {
                           </span>
                           <p className="text-xs font-semibold text-zinc-700">{event.type}</p>
                         </div>
-                        <span className={`hidden lg:inline-flex w-fit rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${event.severity === "ERROR" ? "bg-red-100 text-red-700" : event.severity === "WARN" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                        <span className={`hidden lg:inline-flex w-fit rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${event.severity === "ERROR" ? "bg-red-100 text-red-700" : event.severity === "WARN" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
                           {event.severity}
                         </span>
                         <p className="hidden lg:block text-xs font-semibold text-zinc-700">{event.type}</p>
-                        <p className="text-xs text-zinc-600">{event.actor?.email ?? "Sistema"}</p>
+                        <p className="truncate text-xs text-zinc-600">{event.actor?.email ?? "Sistema"}</p>
                         <p className="text-xs text-zinc-500">{event.statusCode ?? "Status não disponível"}</p>
+                        <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2">
+                          <p className="text-[11px] font-medium leading-4 text-zinc-700">
+                          {getEventSummary(event)}
+                          </p>
+                          <p className="mt-1 text-[10px] leading-4 text-zinc-500">
+                            Contexto: {getEventContext(event)}
+                          </p>
+                          {(event.type === "SYSTEM_ERROR" || event.severity === "ERROR") && (
+                            <p className="mt-1 text-[10px] leading-4 text-zinc-500">
+                              Erro: {getEventErrorIdentity(event)}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </li>
                   ))}

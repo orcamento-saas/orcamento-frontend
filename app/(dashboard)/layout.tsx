@@ -323,13 +323,25 @@ export default function DashboardLayout({
                   <p className="mt-1 text-xs text-zinc-600">
                     {formatCurrency(item.value)} • {formatDateTime(item.signedAt)}
                   </p>
-                  <Link
-                    href={`/dashboard/budget/${item.budgetId}`}
-                    onClick={() => setNotificationsOpen(false)}
-                    className="mt-2 inline-block text-xs font-medium text-teal-700 hover:text-teal-800"
-                  >
-                    Abrir orçamento
-                  </Link>
+                  {item.signedPdfUrl ? (
+                    <a
+                      href={item.signedPdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setNotificationsOpen(false)}
+                      className="mt-2 inline-block text-xs font-medium text-teal-700 hover:text-teal-800"
+                    >
+                      Ver orçamento
+                    </a>
+                  ) : (
+                    <Link
+                      href={`/dashboard/budget/${item.budgetId}`}
+                      onClick={() => setNotificationsOpen(false)}
+                      className="mt-2 inline-block text-xs font-medium text-teal-700 hover:text-teal-800"
+                    >
+                      Ver orçamento
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
