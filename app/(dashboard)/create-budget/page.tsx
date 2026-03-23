@@ -1631,7 +1631,7 @@ export default function CreateBudgetPage() {
       <div className="flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <h2 className="mb-3 shrink-0 text-center text-lg font-semibold text-zinc-800">
-            Prévia (formato do PDF)
+            Prévia (PDF)
           </h2>
           <div className="min-h-0 flex-1 overflow-hidden">
             {renderPreviewContent()}
