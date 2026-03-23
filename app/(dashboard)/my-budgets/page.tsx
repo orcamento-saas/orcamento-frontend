@@ -49,9 +49,10 @@ function getDisplayDate(budget: BudgetCard): string {
   if (budget.documentDate) {
     // Usa a mesma lógica do BudgetPdfPreview para evitar problemas de timezone
     const dateStr = budget.documentDate;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return formatDateShort(budget.createdAt);
-    const [y, m, d] = dateStr.split("-").map(Number);
-    const date = new Date(y, m - 1, d);
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return formatDateShort(budget.createdAt);
+    const [, y, m, d] = match;
+    const date = new Date(Number(y), Number(m) - 1, Number(d));
     return date.toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "2-digit", 

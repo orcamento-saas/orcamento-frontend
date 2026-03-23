@@ -18,20 +18,23 @@ import {
   fetchBudgetLayout,
 } from "@/lib/budgetLayouts";
 
-/** Formata data ISO para YYYY-MM-DD evitando problemas de timezone. */
+/** Formata data para YYYY-MM-DD sem deslocamento de timezone. */
 function formatDocumentDate(dateString: string | null | undefined): string {
   if (!dateString) return "";
-  
-  // Se já está no formato ISO (YYYY-MM-DD), usa diretamente
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    return dateString;
+
+  // Usa diretamente a parte da data quando existir (YYYY-MM-DD ou YYYY-MM-DDTHH:mm:ss...)
+  const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, y, m, d] = match;
+    return `${y}-${m}-${d}`;
   }
-  
-  // Caso contrário, converte Date para formato YYYY-MM-DD evitando timezone
+
+  // Fallback para formatos inesperados.
   const d = new Date(dateString);
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 
