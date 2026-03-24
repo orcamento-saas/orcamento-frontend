@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { getBudgetCards, deleteBudget, updateBudgetExecuted } from "@/services/budgets";
 import type { Budget, BudgetCard } from "@/types/budget";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { StatusBadge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { MyBudgetsSkeleton } from "@/components/Skeleton";
+import { BudgetScheduleModal } from "@/components/BudgetScheduleModal";
+import { formatScheduleDisplay } from "@/lib/budgetSchedule";
 import type { ApiError } from "@/lib/api";
 
 // Hook personalizado para debounce
@@ -44,7 +45,6 @@ function formatDateShort(iso: string): string {
   });
 }
 
-/** Exibe a data do documento ou data de criação como fallback */
 function getDisplayDate(budget: BudgetCard): string {
   if (budget.documentDate) {
     // Usa a mesma lógica do BudgetPdfPreview para evitar problemas de timezone
@@ -77,11 +77,14 @@ function budgetToCard(b: Budget): BudgetCard {
     value: b.value,
     status: b.status,
     executed: b.executed,
+    executedAt: b.executedAt ?? null,
     pdfUrl: b.pdfUrl,
     signedPdfUrl: b.signedPdfUrl,
+    signedAt: null,
     createdAt: b.createdAt,
     documentDate: b.documentDate ?? null,
     clientName: b.clientName ?? null,
+    serviceScheduledAt: b.serviceScheduledAt ?? null,
   };
 }
 
@@ -95,6 +98,25 @@ const btnGreen =
   "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-500";
 const btnYellow =
   "cursor-not-allowed bg-amber-400 text-white opacity-90";
+const btnAmber =
+  "bg-amber-600 text-white hover:bg-amber-700 focus-visible:ring-amber-500";
+
+const IconAgenda = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+  >
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
 
 const IconVerPdf = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -125,7 +147,8 @@ export default function MyBudgetsPage() {
   const [search, setSearch] = useState("");
   const [signedFilter, setSignedFilter] = useState<"all" | "signed" | "unsigned" | "concluded">("all");
   const [updatingExecutedId, setUpdatingExecutedId] = useState<string | null>(null);
-  
+  const [scheduleTarget, setScheduleTarget] = useState<BudgetCard | null>(null);
+
   // Debounce search para reduzir requests
   const debouncedSearch = useDebounce(search, 500);
 
@@ -133,7 +156,14 @@ export default function MyBudgetsPage() {
     if (!accessToken) return;
     getBudgetCards(accessToken, { page: 1, limit: 100 })
       .then((res) => {
-        setBudgets(res.data);
+        setBudgets(
+          res.data.map((row) => ({
+            ...row,
+            executedAt: row.executedAt ?? null,
+            signedAt: row.signedAt ?? null,
+            serviceScheduledAt: row.serviceScheduledAt ?? null,
+          }))
+        );
         setTotal(res.total);
       })
       .catch((err: ApiError) => {
@@ -172,7 +202,17 @@ export default function MyBudgetsPage() {
     try {
       const updated = await updateBudgetExecuted(id, executed, accessToken);
       const updatedCard = budgetToCard(updated);
-      setBudgets((prev) => prev.map((b) => (b.id === id ? updatedCard : b)));
+      setBudgets((prev) =>
+        prev.map((b) =>
+          b.id === id
+            ? {
+                ...updatedCard,
+                signedAt: b.signedAt,
+                executedAt: executed ? new Date().toISOString() : null,
+              }
+            : b
+        )
+      );
     } catch (err) {
       const e = err as ApiError;
       alert(e.message ?? "Erro ao atualizar execução.");
@@ -188,10 +228,12 @@ export default function MyBudgetsPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="mb-4 shrink-0">
-        <h1 className="mt-2 text-center text-xl font-bold text-zinc-900 sm:mt-0 sm:text-left">Meus orçamentos</h1>
-        <p className="mt-1 text-center text-sm text-zinc-500 sm:text-left">
-          {total} {total === 1 ? "orçamento" : "orçamentos"} no total
-        </p>
+        <div className="mt-2 flex flex-col items-center text-center sm:mt-0 sm:items-start sm:text-left lg:flex-row lg:items-baseline lg:gap-2">
+          <h1 className="text-xl font-bold text-zinc-900">Meus orçamentos</h1>
+          <p className="mt-1 text-sm text-zinc-500 sm:mt-1 lg:mt-0">
+            {total} {total === 1 ? "orçamento" : "orçamentos"} no total
+          </p>
+        </div>
       </div>
 
       <div className="mb-4 flex shrink-0 flex-wrap gap-2">
@@ -236,86 +278,124 @@ export default function MyBudgetsPage() {
             <ul className="space-y-2 sm:space-y-4">
               {filteredBudgets.map((b) => (
                 <li key={b.id}>
-                  <div className="flex flex-col gap-3 sm:gap-4 rounded-lg border border-zinc-200 bg-teal-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <StatusBadge status={b.status} />
-                        {!b.signedPdfUrl && (
-                          <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800 sm:px-2">
-                            Não assinado
-                          </span>
-                        )}
-                      </div>
+                  <div className="rounded-lg border border-zinc-200 bg-teal-50 p-4">
+                    <div className="flex flex-col gap-3 sm:gap-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 flex-1">
                       <p className="mt-1 text-sm font-semibold text-zinc-900 sm:text-base sm:font-semibold">
                         {b.clientName ?? "—"}
                       </p>
                       <p className="mt-0.5 text-xs text-zinc-600 sm:mt-1 sm:text-sm">
                         {b.title ?? "—"}
                       </p>
-                      <p className="mt-0.5 text-xs text-zinc-700 sm:mt-1 sm:text-sm">
-                        Total {formatCurrency(b.value)} - {getDisplayDate(b)}
-                      </p>
-                      {b.status === "SIGNED" && (
-                        <label className="mt-2 inline-flex items-center gap-2 text-xs text-zinc-700 sm:text-sm">
-                          <input
-                            type="checkbox"
-                            checked={!!b.executed}
-                            disabled={updatingExecutedId === b.id}
-                            onChange={(e) => handleExecutedChange(b.id, e.target.checked)}
-                            className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500"
-                          />
-                          <span>{updatingExecutedId === b.id ? "Salvando..." : "Concluído"}</span>
-                        </label>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center justify-center gap-5 sm:justify-start sm:gap-2">
-                      {b.pdfUrl && (
-                        <>
-                          <a
-                            href={b.pdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`${btnBase} ${btnPurple}`}
-                            title="Ver PDF"
+                      <p className="mt-0.5 text-xs text-zinc-700 sm:mt-1 sm:text-sm">Total {formatCurrency(b.value)}</p>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            className={`${btnBase} ${btnAmber}`}
+                            title="Agendar execução do serviço"
+                            onClick={() => setScheduleTarget(b)}
                           >
-                            <IconVerPdf />
-                          </a>
-                        </>
-                      )}
-                      {b.signedPdfUrl ? (
-                        <a
-                          href={b.signedPdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`${btnBase} ${btnGreen}`}
-                          title="PDF assinado"
-                        >
-                          <IconAssinado />
-                        </a>
-                      ) : (
-                        <span
-                          className={`${btnBase} ${btnYellow}`}
-                          title="PDF assinado (não disponível)"
-                        >
-                          <IconAssinado />
-                        </span>
-                      )}
-                      <Link
-                        href={`/dashboard/budget/${b.id}`}
-                        className={`${btnBase} ${btnBlue}`}
-                        title="Abrir"
-                      >
-                        <IconAbrir />
-                      </Link>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        className="h-9 w-9 shrink-0 p-0 sm:h-10 sm:w-10 [&_svg]:size-5 [&_svg]:shrink-0 sm:[&_svg]:size-6"
-                        onClick={() => setDeleteId(b.id)}
-                        title="Excluir"
-                      >
-                        <IconExcluir />
-                      </Button>
+                            <IconAgenda />
+                          </button>
+                          {b.pdfUrl && (
+                            <a
+                              href={b.pdfUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`${btnBase} ${btnPurple}`}
+                              title="Ver PDF"
+                            >
+                              <IconVerPdf />
+                            </a>
+                          )}
+                          {b.signedPdfUrl ? (
+                            <a
+                              href={b.signedPdfUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`${btnBase} ${btnGreen}`}
+                              title="PDF assinado"
+                            >
+                              <IconAssinado />
+                            </a>
+                          ) : (
+                            <span
+                              className={`${btnBase} ${btnYellow}`}
+                              title="PDF assinado (não disponível)"
+                            >
+                              <IconAssinado />
+                            </span>
+                          )}
+                          <Link
+                            href={`/dashboard/budget/${b.id}`}
+                            className={`${btnBase} ${btnBlue}`}
+                            title="Abrir"
+                          >
+                            <IconAbrir />
+                          </Link>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            className="h-9 w-9 shrink-0 p-0 sm:h-10 sm:w-10 [&_svg]:size-5 [&_svg]:shrink-0 sm:[&_svg]:size-6"
+                            onClick={() => setDeleteId(b.id)}
+                            title="Excluir"
+                          >
+                            <IconExcluir />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                        <div className="flex items-center rounded-md bg-white/80 px-3 py-2">
+                          <label className="inline-flex items-center gap-2 text-xs text-zinc-700 sm:text-sm">
+                            <input
+                              type="checkbox"
+                              checked={!!b.executed}
+                              disabled={updatingExecutedId === b.id}
+                              onChange={(e) => handleExecutedChange(b.id, e.target.checked)}
+                              className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500"
+                            />
+                            <span>{updatingExecutedId === b.id ? "Salvando..." : "Concluído"}</span>
+                          </label>
+                        </div>
+                        <div className="rounded-md bg-white/80 px-3 py-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Criação</p>
+                          {b.createdAt ? (
+                            <p className="text-xs font-semibold text-emerald-700 sm:text-sm">{getDisplayDate(b)}</p>
+                          ) : (
+                            <p className="text-xs font-semibold text-amber-700 sm:text-sm">Não informado</p>
+                          )}
+                        </div>
+                        <div className="rounded-md bg-white/80 px-3 py-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Assinatura</p>
+                          {b.signedAt ? (
+                            <p className="text-xs font-semibold text-emerald-700 sm:text-sm">{formatDateShort(b.signedAt)}</p>
+                          ) : (
+                            <p className="text-xs font-semibold text-amber-700 sm:text-sm">Não assinado</p>
+                          )}
+                        </div>
+                        <div className="rounded-md bg-white/80 px-3 py-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Agendamento</p>
+                          {b.serviceScheduledAt ? (
+                            <p className="text-xs font-semibold text-emerald-700 sm:text-sm">
+                              {formatScheduleDisplay(b.serviceScheduledAt)}
+                            </p>
+                          ) : (
+                            <p className="text-xs font-semibold text-amber-700 sm:text-sm">Sem agendamento</p>
+                          )}
+                        </div>
+                        <div className="rounded-md bg-white/80 px-3 py-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Conclusão</p>
+                          {b.executed ? (
+                            <p className="text-xs font-semibold text-emerald-700 sm:text-sm">
+                              {b.executedAt ? formatDateShort(b.executedAt) : "Concluído"}
+                            </p>
+                          ) : (
+                            <p className="text-xs font-semibold text-amber-700 sm:text-sm">Não concluído</p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </li>
@@ -324,6 +404,22 @@ export default function MyBudgetsPage() {
           )}
         </div>
       </Card>
+
+      <BudgetScheduleModal
+        target={scheduleTarget}
+        accessToken={accessToken}
+        onClose={() => setScheduleTarget(null)}
+        onSaved={(updated) => {
+          const card = budgetToCard(updated);
+          setBudgets((prev) =>
+            prev.map((x) =>
+              x.id === card.id
+                ? { ...card, signedAt: x.signedAt, executedAt: x.executedAt }
+                : x
+            )
+          );
+        }}
+      />
 
       <Modal
         isOpen={deleteId !== null}

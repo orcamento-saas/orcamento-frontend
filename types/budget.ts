@@ -12,11 +12,15 @@ export interface BudgetCard {
   value: number;
   status: BudgetStatus;
   executed: boolean;
+  executedAt: string | null;
   pdfUrl: string | null;
   signedPdfUrl: string | null;
+  signedAt: string | null;
   createdAt: string;
   documentDate: string | null;
   clientName: string | null;
+  /** ISO 8601 — data/hora agendada para execução do serviço */
+  serviceScheduledAt: string | null;
 }
 
 export interface Budget {
@@ -27,6 +31,7 @@ export interface Budget {
   value: number;
   status: BudgetStatus;
   executed: boolean;
+  executedAt?: string | null;
   pdfUrl: string | null;
   signedPdfUrl: string | null;
   createdAt: string;
@@ -48,6 +53,8 @@ export interface Budget {
   backgroundColor?: string | null;
   gridColor?: string | null;
   templateId?: string | null;
+  /** ISO 8601 — agendamento da execução do serviço */
+  serviceScheduledAt?: string | null;
 }
 
 export interface PublicBudgetView {

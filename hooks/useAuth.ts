@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 import type { AccountSummary, UserPlan } from "@/types/account";
-import type { ApiError } from "@/lib/api";
+import { ApiRequestError, type ApiError } from "@/lib/api";
 import { getCurrentAccount } from "@/services/account";
 import { trackLoginEvent, trackLogoutEvent } from "@/services/authEvents";
 
@@ -15,6 +15,8 @@ export interface UseAuthReturn {
   session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  /** Recarrega `/me` e atualiza `account` (use após alterar nome/telefone). */
+  refreshAccount: () => Promise<void>;
   accessToken: string | null;
   account: AccountSummary | null;
   isAdmin: boolean;
@@ -30,6 +32,14 @@ let accountCacheToken: string | null = null;
 let accountLastCheck = 0;
 let accountRequest: Promise<AccountSummary | null> | null = null;
 const CACHE_DURATION = 30000; // 30 segundos
+
+/** Invalida cache de conta (ex.: após PATCH /me). */
+export function invalidateAccountCache(): void {
+  accountCache = null;
+  accountCacheToken = null;
+  accountLastCheck = 0;
+  accountRequest = null;
+}
 
 function getAccountDisplayName(user: User | null): string | undefined {
   if (!user) {
@@ -51,6 +61,7 @@ function getAccountDisplayName(user: User | null): string | undefined {
 }
 
 function isApiError(error: unknown): error is ApiError {
+  if (error instanceof ApiRequestError) return true;
   return (
     typeof error === "object" &&
     error !== null &&
@@ -67,10 +78,17 @@ function buildFallbackAccount(
     return null;
   }
 
+  const meta = sessionUser.user_metadata as Record<string, unknown> | undefined;
+  const metaPhone =
+    typeof meta?.phone === "string" && meta.phone.trim()
+      ? meta.phone.trim()
+      : undefined;
+
   return {
     id: sessionUser.id,
     email: sessionUser.email ?? "",
     name: getAccountDisplayName(sessionUser),
+    phone: metaPhone ?? null,
     plan: "FREE",
     isAdmin: false,
     suspended,
@@ -193,6 +211,26 @@ export function useAuth(): UseAuthReturn {
     };
   }, [supabase]);
 
+  const refreshAccount = useCallback(async () => {
+    const token = session?.access_token;
+    const sessionUser = session?.user ?? null;
+    if (!token) {
+      return;
+    }
+    invalidateAccountCache();
+    setAccountLoading(true);
+    try {
+      const next = await loadAccount(token, sessionUser);
+      if (mountedRef.current) {
+        setAccount(next);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setAccountLoading(false);
+      }
+    }
+  }, [session?.access_token, session?.user]);
+
   const signOut = async () => {
     const token = session?.access_token ?? null;
     if (token) {
@@ -205,10 +243,7 @@ export function useAuth(): UseAuthReturn {
 
     sessionCache = null;
     lastCheck = 0;
-    accountCache = null;
-    accountCacheToken = null;
-    accountLastCheck = 0;
-    accountRequest = null;
+    invalidateAccountCache();
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
@@ -242,6 +277,7 @@ export function useAuth(): UseAuthReturn {
     session,
     loading,
     signOut,
+    refreshAccount,
     accessToken: session?.access_token ?? null,
     account,
     isAdmin: account?.isAdmin ?? false,

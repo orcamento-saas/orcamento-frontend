@@ -110,6 +110,14 @@ export async function updateBudgetExecuted(
   return apiPost<Budget>(`${BUDGETS}/${id}/executed`, { executed }, token);
 }
 
+export async function updateBudgetSchedule(
+  id: string,
+  body: { serviceScheduledAt: string | null },
+  token: string
+): Promise<Budget> {
+  return apiPost<Budget>(`${BUDGETS}/${id}/schedule`, body, token);
+}
+
 export async function getPublicBudget(id: string): Promise<PublicBudgetView> {
   return apiGet<PublicBudgetView>(`${PUBLIC_BUDGET}/${id}`);
 }

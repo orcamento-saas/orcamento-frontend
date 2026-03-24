@@ -4,6 +4,7 @@ export interface AdminUserListItem {
   id: string;
   name: string;
   email: string;
+  phone: string | null;
   plan: UserPlan;
   isAdmin: boolean;
   suspended: boolean;

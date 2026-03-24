@@ -7,7 +7,7 @@ import { getBudgets } from "@/services/budgets";
 import type { Budget } from "@/types/budget";
 import type { ApiError } from "@/lib/api";
 
-type RangePreset = "today" | "yesterday" | "last7" | "custom";
+type RangePreset = "today" | "yesterday" | "next7" | "custom";
 
 function toDateInputValue(date: Date): string {
   const y = date.getFullYear();
@@ -43,10 +43,13 @@ function buildPeriod(preset: RangePreset, customStart: string, customEnd: string
     return { start: startOfDay(y), end: endOfDay(y) };
   }
 
-  if (preset === "last7") {
-    const start = new Date(todayStart);
-    start.setDate(start.getDate() - 6);
-    return { start, end: todayEnd };
+  /** Últimos 7 dias: de 7 dias atrás até ontem. */
+  if (preset === "next7") {
+    const startDate = new Date(todayStart);
+    startDate.setDate(startDate.getDate() - 7);
+    const endDate = new Date(todayStart);
+    endDate.setDate(endDate.getDate() - 1);
+    return { start: startOfDay(startDate), end: endOfDay(endDate) };
   }
 
   const parsedStart = customStart ? new Date(`${customStart}T00:00:00`) : todayStart;
@@ -170,6 +173,18 @@ export default function DashboardPage() {
   const [customStart, setCustomStart] = useState(toDateInputValue(today));
   const [customEnd, setCustomEnd] = useState(toDateInputValue(today));
 
+  /** Alinha os inputs de data (mobile) ao intervalo real de “Últimos 7 dias”. */
+  useEffect(() => {
+    if (preset !== "next7") return;
+    const today = startOfDay(new Date());
+    const start = new Date(today);
+    start.setDate(start.getDate() - 7);
+    const end = new Date(today);
+    end.setDate(end.getDate() - 1);
+    setCustomStart(toDateInputValue(start));
+    setCustomEnd(toDateInputValue(end));
+  }, [preset]);
+
   useEffect(() => {
     if (!accessToken) return;
 
@@ -266,9 +281,9 @@ export default function DashboardPage() {
             </button>
             <button
               type="button"
-              onClick={() => setPreset("last7")}
+              onClick={() => setPreset("next7")}
               className={`rounded-full px-3 py-1 text-sm font-semibold transition ${
-                preset === "last7"
+                preset === "next7"
                   ? "bg-zinc-900 text-white shadow"
                   : "bg-white text-zinc-700 hover:bg-zinc-100"
               }`}
@@ -337,9 +352,9 @@ export default function DashboardPage() {
             </button>
             <button
               type="button"
-              onClick={() => setPreset("last7")}
+              onClick={() => setPreset("next7")}
               className={`rounded-full px-3 py-1 text-sm font-semibold transition ${
-                preset === "last7"
+                preset === "next7"
                   ? "bg-zinc-900 text-white shadow"
                   : "bg-white text-zinc-700 hover:bg-zinc-100"
               }`}

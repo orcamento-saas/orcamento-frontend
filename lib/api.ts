@@ -10,6 +10,23 @@ export interface ApiError {
   code?: string;
 }
 
+/**
+ * Erro de API como instância de Error — evita rejeições com objeto literal,
+ * que no Next.js aparecem como "[object Object]" no overlay.
+ */
+export class ApiRequestError extends Error implements ApiError {
+  status: number;
+  code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+    this.code = code;
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
 function clearRequestCache(): void {
   requestCache.clear();
 }
@@ -81,12 +98,12 @@ async function request<T>(
   
   if (!res.ok) {
     const fallbackMessage = res.statusText || "Erro na requisição";
-    const err: ApiError = {
-      message: normalizeApiMessage((data as { message?: unknown }).message, fallbackMessage),
-      status: res.status,
-      code: typeof (data as { code?: unknown }).code === "string" ? (data as { code: string }).code : undefined,
-    };
-    throw err;
+    const payload = data as { message?: unknown; error?: unknown; code?: unknown };
+    const rawMessage = payload.message ?? payload.error;
+    const msg = normalizeApiMessage(rawMessage, fallbackMessage);
+    const code =
+      typeof payload.code === "string" ? payload.code : undefined;
+    throw new ApiRequestError(msg, res.status, code);
   }
 
   if (init.method && init.method !== "GET") {

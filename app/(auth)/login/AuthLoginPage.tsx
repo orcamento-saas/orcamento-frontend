@@ -1,14 +1,15 @@
- "use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { formatPhoneBr, phoneDigits } from "@/lib/formatPhone";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 
-type Mode = "login" | "register";
+type Mode = "login" | "register" | "forgot";
 
 function EyeIcon() {
   return (
@@ -58,9 +59,11 @@ export function AuthLoginPage() {
   // Garante que ao abrir /login?mode=register a tela já venha em "Criar conta"
   const [mode, setMode] = useState<Mode>(() => {
     const qpMode = searchParams.get("mode");
-    return qpMode === "register" || qpMode === "login" ? qpMode : "login";
+    if (qpMode === "register" || qpMode === "forgot") return qpMode;
+    return "login";
   });
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -116,10 +119,19 @@ export function AuthLoginPage() {
 
   useEffect(() => {
     const qpMode = searchParams.get("mode");
-    if (qpMode === "register" || qpMode === "login") {
+    if (qpMode === "register" || qpMode === "forgot") {
       setMode(qpMode);
+    } else {
+      setMode("login");
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (searchParams.get("reset") !== "success") return;
+    setSuccess("Senha alterada com sucesso. Entre com a nova senha.");
+    setError(null);
+    router.replace("/login", { scroll: false });
+  }, [searchParams, router]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -180,6 +192,7 @@ export function AuthLoginPage() {
           ...(emailRedirectTo ? { emailRedirectTo } : {}),
           data: {
             name: normalizedName,
+            phone: formatPhoneBr(phone).trim().slice(0, 30),
           },
         },
       });
@@ -195,6 +208,7 @@ export function AuthLoginPage() {
 
       setSuccess("Conta criada. Verifique seu e-mail e confirme para entrar.");
       setMode("login");
+      router.replace("/login", { scroll: false });
       setPassword("");
       setConfirmPassword("");
     } finally {
@@ -202,16 +216,55 @@ export function AuthLoginPage() {
     }
   }
 
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setError("Informe seu e-mail.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const redirectTo = `${window.location.origin}/auth/update-password`;
+      const { error: err } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo,
+      });
+      if (err) {
+        setError(err.message);
+        return;
+      }
+      setSuccess(
+        "Se houver uma conta com este e-mail, você receberá um link para redefinir a senha. Verifique a caixa de entrada e o spam."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const isLogin = mode === "login";
+  const isForgot = mode === "forgot";
+  const isRegister = mode === "register";
 
   return (
     <div className="flex min-h-[100svh] flex-col bg-gray-50 overflow-hidden lg:min-h-screen lg:flex-row">
-      {/* Topo mobile: logo (login e criar conta iguais) */}
-      <div className="flex w-full flex-col items-center justify-start px-5 pt-0 pb-0 text-center lg:hidden -mt-6">
+      {/* Topo mobile: logo (cadastro com menos espaço até o formulário) */}
+      <div
+        className={`flex w-full flex-col items-center justify-start px-5 pt-0 pb-0 text-center lg:hidden -mt-6 ${
+          isRegister ? "-mb-10" : isForgot ? "pb-2" : ""
+        }`}
+      >
         <img
           src="/plan/logo.png"
           alt="Logo"
-          className="mx-auto mt-0 mb-0 h-[220px] w-[220px] object-contain"
+          className={`mx-auto mt-0 object-contain ${
+            isRegister
+              ? "mb-0 h-[180px] w-[180px]"
+              : isForgot
+                ? "mb-8 h-[220px] w-[220px]"
+                : "mb-0 h-[220px] w-[220px]"
+          }`}
         />
       </div>
 
@@ -281,35 +334,91 @@ export function AuthLoginPage() {
       <div className="flex flex-1 w-full flex-col justify-center px-5 pt-0 pb-4 sm:px-8 sm:py-8 lg:flex-none lg:h-auto lg:w-1/2 lg:px-16 lg:py-1 lg:justify-start">
         <div className="mx-auto w-full max-w-sm">
           {/* Título */}
-          <div className="mb-1">
+          <div className={isForgot ? "mb-4 lg:mb-6" : "mb-1"}>
             <img
               src="/plan/logo.png"
               alt="Logo"
-              className={`mx-auto mb-0 hidden h-[300px] w-[300px] object-contain lg:block ${
-                isLogin ? "lg:-mt-3 lg:-mb-6" : "lg:-mt-3 lg:-mb-14"
+              className={`mx-auto hidden object-contain lg:block ${
+                isLogin && !isForgot
+                  ? "mb-0 h-[300px] w-[300px] lg:-mt-3 lg:-mb-6"
+                  : isForgot
+                    ? "mb-8 mt-0 h-[240px] w-[240px] lg:mb-10 lg:mt-2"
+                    : "mb-0 h-[240px] w-[240px] lg:-mt-3 lg:-mb-20"
               }`}
             />
-            <h2 className="text-2xl font-bold text-gray-900">
-              {isLogin ? "Entrar" : "Criar conta"}
+            <h2
+              className={`text-2xl font-bold text-gray-900 ${
+                isForgot ? "mt-2 lg:mt-4" : ""
+              }`}
+            >
+              {isForgot
+                ? "Recuperar senha"
+                : isLogin
+                  ? "Entrar"
+                  : "Criar conta"}
             </h2>
             <p className="mt-1 text-sm text-gray-600">
-              {isLogin 
-                ? "Não tem uma conta? " 
-                : "Já tem uma conta? "
-              }
-              <button
-                type="button"
-                onClick={() => setMode(isLogin ? "register" : "login")}
-                className="font-medium text-teal-600 hover:text-teal-500"
-              >
-                {isLogin ? "Criar agora" : "Entrar agora"}
-              </button>
+              {isForgot ? (
+                <>
+                  Digite o e-mail da sua conta. Se existir cadastro, enviaremos o link para redefinir a
+                  senha.{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError(null);
+                      setSuccess(null);
+                      setMode("login");
+                      router.replace("/login", { scroll: false });
+                    }}
+                    className="font-medium text-teal-600 hover:text-teal-500"
+                  >
+                    Voltar ao login
+                  </button>
+                </>
+              ) : isLogin ? (
+                <>
+                  Não tem uma conta?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError(null);
+                      setSuccess(null);
+                      setMode("register");
+                      router.replace("/login?mode=register", { scroll: false });
+                    }}
+                    className="font-medium text-teal-600 hover:text-teal-500"
+                  >
+                    Criar agora
+                  </button>
+                </>
+              ) : (
+                <>
+                  Já tem uma conta?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError(null);
+                      setSuccess(null);
+                      setMode("login");
+                      router.replace("/login", { scroll: false });
+                    }}
+                    className="font-medium text-teal-600 hover:text-teal-500"
+                  >
+                    Entrar agora
+                  </button>
+                </>
+              )}
             </p>
           </div>
 
           {/* Formulário */}
-          <form onSubmit={isLogin ? handleLogin : handleRegister} className="space-y-4">
-            {!isLogin && (
+          <form
+            onSubmit={
+              isLogin ? handleLogin : isRegister ? handleRegister : handleForgotPassword
+            }
+            className="space-y-4"
+          >
+            {isRegister && (
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                   Nome
@@ -322,6 +431,25 @@ export function AuthLoginPage() {
                   onChange={(e) => setName(e.target.value)}
                   required
                   placeholder="Seu nome"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
+              </div>
+            )}
+
+            {isRegister && (
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Telefone (WhatsApp)
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
+                  required
+                  placeholder="(99) 99999-9999"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 />
               </div>
@@ -343,33 +471,35 @@ export function AuthLoginPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Senha
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete={isLogin ? "current-password" : "new-password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="••••••"
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                >
-                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                </button>
+            {(isLogin || isRegister) && (
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Senha
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete={isLogin ? "current-password" : "new-password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="••••••"
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
-            {!isLogin && (
+            {isRegister && (
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                   Confirmar Senha
@@ -403,7 +533,16 @@ export function AuthLoginPage() {
                   <input type="checkbox" className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
                   <span className="ml-2 text-gray-600">Lembrar de mim</span>
                 </label>
-                <button type="button" className="text-teal-600 hover:text-teal-500">
+                <button
+                  type="button"
+                  className="text-teal-600 hover:text-teal-500"
+                  onClick={() => {
+                    setError(null);
+                    setSuccess(null);
+                    setMode("forgot");
+                    router.replace("/login?mode=forgot", { scroll: false });
+                  }}
+                >
                   Esqueceu a senha?
                 </button>
               </div>
@@ -426,11 +565,38 @@ export function AuthLoginPage() {
               disabled={loading}
               className="w-full bg-teal-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading 
-                ? (isLogin ? "Entrando..." : "Criando conta...") 
-                : (isLogin ? "Entrar" : "Criar conta")
-              }
+              {loading
+                ? isLogin
+                  ? "Entrando..."
+                  : isForgot
+                    ? "Enviando..."
+                    : "Criando conta..."
+                : isLogin
+                  ? "Entrar"
+                  : isForgot
+                    ? "Enviar instruções"
+                    : "Criar conta"}
             </button>
+
+            {isLogin && (
+              <p className="pt-2 text-center text-sm text-gray-500">
+                <Link
+                  href="/politica-de-privacidade"
+                  className="text-gray-500 transition-colors hover:text-gray-600"
+                >
+                  Política de privacidade
+                </Link>
+                <span className="text-gray-400" aria-hidden>
+                  {" "}-{" "}
+                </span>
+                <Link
+                  href="/termos-de-uso"
+                  className="text-gray-500 transition-colors hover:text-gray-600"
+                >
+                  Termos de uso
+                </Link>
+              </p>
+            )}
           </form>
         </div>
       </div>

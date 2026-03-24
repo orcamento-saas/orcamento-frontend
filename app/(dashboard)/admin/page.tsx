@@ -632,6 +632,11 @@ export default function AdminPage() {
                                 )}
                               </div>
                               <p className="mt-1 truncate text-sm text-zinc-600">{user.email}</p>
+                              {user.phone && (
+                                <p className="mt-0.5 truncate text-sm text-zinc-600">
+                                  Tel.: {user.phone}
+                                </p>
+                              )}
                               <p className="mt-2 text-xs text-zinc-500">
                                 Criado em {formatDateTime(user.createdAt)}
                               </p>
