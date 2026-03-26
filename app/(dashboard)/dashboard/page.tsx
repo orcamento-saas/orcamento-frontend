@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/hooks/useAuth";
-import { getBudgets } from "@/services/budgets";
-import type { Budget } from "@/types/budget";
+import { getDashboardSummary } from "@/services/budgets";
 import type { ApiError } from "@/lib/api";
 
 type RangePreset = "today" | "yesterday" | "next7" | "custom";
@@ -24,10 +23,6 @@ function endOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 }
 
-function isSignedBudget(b: Budget): boolean {
-  return b.status === "SIGNED" || !!b.signedPdfUrl;
-}
-
 function buildPeriod(preset: RangePreset, customStart: string, customEnd: string): { start: Date; end: Date } {
   const now = new Date();
   const todayStart = startOfDay(now);
@@ -43,13 +38,11 @@ function buildPeriod(preset: RangePreset, customStart: string, customEnd: string
     return { start: startOfDay(y), end: endOfDay(y) };
   }
 
-  /** Últimos 7 dias: de 7 dias atrás até ontem. */
+  /** Últimos 7 dias: hoje e mais 6 dias para trás. */
   if (preset === "next7") {
     const startDate = new Date(todayStart);
-    startDate.setDate(startDate.getDate() - 7);
-    const endDate = new Date(todayStart);
-    endDate.setDate(endDate.getDate() - 1);
-    return { start: startOfDay(startDate), end: endOfDay(endDate) };
+    startDate.setDate(startDate.getDate() - 6);
+    return { start: startOfDay(startDate), end: todayEnd };
   }
 
   const parsedStart = customStart ? new Date(`${customStart}T00:00:00`) : todayStart;
@@ -63,13 +56,13 @@ function buildPeriod(preset: RangePreset, customStart: string, customEnd: string
 function SummaryCard({ title, value, tone }: { title: string; value: number; tone: "teal" | "amber" | "emerald" }) {
   const toneClass =
     tone === "teal"
-      ? "from-cyan-500 to-teal-600"
+      ? "bg-cyan-500"
       : tone === "amber"
-        ? "from-amber-500 to-orange-600"
-        : "from-emerald-500 to-green-600";
+        ? "bg-orange-600"
+        : "bg-emerald-600";
 
   return (
-    <div className={`rounded-lg sm:rounded-3xl bg-gradient-to-br ${toneClass} p-1.5 sm:p-4 min-h-[72px] sm:min-h-0 text-white shadow-md shadow-zinc-200/70`}>
+    <div className={`rounded-lg sm:rounded-3xl ${toneClass} p-1.5 sm:p-4 min-h-[72px] sm:min-h-0 text-white shadow-md shadow-zinc-200/70`}>
       <p className="text-[9px] leading-tight sm:text-sm font-medium text-white/90">{title}</p>
       <p className="mt-0.5 text-sm leading-none sm:mt-1.5 sm:text-2xl font-bold tracking-tight">{value}</p>
     </div>
@@ -77,24 +70,46 @@ function SummaryCard({ title, value, tone }: { title: string; value: number; ton
 }
 
 function PieChart({
+  budgets,
+  created,
   signed,
-  unsigned,
   concluded,
 }: {
+  budgets: number;
+  created: number;
   signed: number;
-  unsigned: number;
   concluded: number;
 }) {
-  const total = signed + unsigned + concluded;
+  const totalActivities = created + signed + concluded;
   const radius = 84;
   const strokeWidth = 38;
   const size = radius * 2 + strokeWidth;
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
+  const budgetLabel = budgets === 1 ? "Orçamento" : "Orçamentos";
 
-  const signedLen = total > 0 ? (signed / total) * circumference : 0;
-  const unsignedLen = total > 0 ? (unsigned / total) * circumference : 0;
-  const concludedLen = total > 0 ? (concluded / total) * circumference : 0;
+  const createdLen = totalActivities > 0 ? (created / totalActivities) * circumference : 0;
+  const signedLen = totalActivities > 0 ? (signed / totalActivities) * circumference : 0;
+  const concludedLen = totalActivities > 0 ? (concluded / totalActivities) * circumference : 0;
+  const createdRatio = totalActivities > 0 ? created / totalActivities : 0;
+  const signedRatio = totalActivities > 0 ? signed / totalActivities : 0;
+  const concludedRatio = totalActivities > 0 ? concluded / totalActivities : 0;
+
+  const labelRadius = radius;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const pointAt = (angleDeg: number) => ({
+    x: center + Math.cos(toRad(angleDeg)) * labelRadius,
+    y: center + Math.sin(toRad(angleDeg)) * labelRadius,
+  });
+
+  const createdMidDeg = -90 + (createdRatio * 360) / 2;
+  const signedMidDeg = -90 + createdRatio * 360 + (signedRatio * 360) / 2;
+  const concludedMidDeg =
+    -90 + (createdRatio + signedRatio) * 360 + (concludedRatio * 360) / 2;
+
+  const createdPoint = pointAt(createdMidDeg);
+  const signedPoint = pointAt(signedMidDeg);
+  const concludedPoint = pointAt(concludedMidDeg);
 
   return (
     <div className="flex flex-col items-center gap-3 py-2">
@@ -113,9 +128,9 @@ function PieChart({
             cy={center}
             r={radius}
             fill="none"
-            stroke="#0891b2"
+            stroke="#06b6d4"
             strokeWidth={strokeWidth}
-            strokeDasharray={`${signedLen} ${Math.max(0, circumference - signedLen)}`}
+            strokeDasharray={`${createdLen} ${Math.max(0, circumference - createdLen)}`}
             strokeLinecap="butt"
           />
           <circle
@@ -123,10 +138,10 @@ function PieChart({
             cy={center}
             r={radius}
             fill="none"
-            stroke="#f59e0b"
+            stroke="#ea580c"
             strokeWidth={strokeWidth}
-            strokeDasharray={`${unsignedLen} ${Math.max(0, circumference - unsignedLen)}`}
-            strokeDashoffset={-signedLen}
+            strokeDasharray={`${signedLen} ${Math.max(0, circumference - signedLen)}`}
+            strokeDashoffset={-createdLen}
             strokeLinecap="butt"
           />
           <circle
@@ -137,26 +152,59 @@ function PieChart({
             stroke="#16a34a"
             strokeWidth={strokeWidth}
             strokeDasharray={`${concludedLen} ${Math.max(0, circumference - concludedLen)}`}
-            strokeDashoffset={-(signedLen + unsignedLen)}
+            strokeDashoffset={-(createdLen + signedLen)}
             strokeLinecap="butt"
           />
         </g>
         <text
           x={center}
-          y={center - 2}
+          y={center - 8}
           textAnchor="middle"
           className="fill-zinc-900 text-xl font-bold"
         >
-          {total}
+          {budgets}
         </text>
         <text
           x={center}
-          y={center + 16}
+          y={center + 14}
           textAnchor="middle"
-          className="fill-zinc-500 text-[11px]"
+          className="fill-zinc-500 text-[12px] font-semibold"
         >
-          no período
+          {budgetLabel}
         </text>
+        {created > 0 && createdRatio >= 0.08 && (
+          <text
+            x={createdPoint.x}
+            y={createdPoint.y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            className="fill-white text-[13px] font-bold"
+          >
+            {created}
+          </text>
+        )}
+        {signed > 0 && signedRatio >= 0.08 && (
+          <text
+            x={signedPoint.x}
+            y={signedPoint.y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            className="fill-white text-[13px] font-bold"
+          >
+            {signed}
+          </text>
+        )}
+        {concluded > 0 && concludedRatio >= 0.08 && (
+          <text
+            x={concludedPoint.x}
+            y={concludedPoint.y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            className="fill-white text-[13px] font-bold"
+          >
+            {concluded}
+          </text>
+        )}
       </svg>
     </div>
   );
@@ -164,9 +212,9 @@ function PieChart({
 
 export default function DashboardPage() {
   const { accessToken, user } = useAuth();
-  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState({ budgets: 0, created: 0, signed: 0, concluded: 0 });
 
   const [preset, setPreset] = useState<RangePreset>("today");
   const today = new Date();
@@ -185,6 +233,11 @@ export default function DashboardPage() {
     setCustomEnd(toDateInputValue(end));
   }, [preset]);
 
+  const period = useMemo(
+    () => buildPeriod(preset, customStart, customEnd),
+    [preset, customStart, customEnd]
+  );
+
   useEffect(() => {
     if (!accessToken) return;
 
@@ -192,18 +245,10 @@ export default function DashboardPage() {
       setLoading(true);
       setError(null);
       try {
-        const all: Budget[] = [];
-        let page = 1;
-        const limit = 100;
-
-        while (true) {
-          const res = await getBudgets(accessToken, { page, limit });
-          all.push(...res.data);
-          if (res.data.length < limit) break;
-          page += 1;
-        }
-
-        setBudgets(all);
+        const startDate = period.start.toISOString();
+        const endDate = period.end.toISOString();
+        const data = await getDashboardSummary(accessToken, { startDate, endDate });
+        setSummary(data);
       } catch (err) {
         const e = err as ApiError;
         setError(e.message ?? "Erro ao carregar dados do dashboard.");
@@ -213,41 +258,7 @@ export default function DashboardPage() {
     };
 
     void run();
-  }, [user?.id, !!accessToken]);
-
-  const period = useMemo(
-    () => buildPeriod(preset, customStart, customEnd),
-    [preset, customStart, customEnd]
-  );
-
-  const filtered = useMemo(() => {
-    return budgets.filter((b) => {
-      const createdAt = new Date(b.createdAt);
-      return createdAt >= period.start && createdAt <= period.end;
-    });
-  }, [budgets, period]);
-
-  const summary = useMemo(() => {
-    let signed = 0;
-    let unsigned = 0;
-    let concluded = 0;
-
-    for (const b of filtered) {
-      // Categorias exclusivas:
-      // 1) Concluído
-      // 2) Assinado (somente se NÃO concluído)
-      // 3) Sem assinatura
-      if (b.executed) {
-        concluded += 1;
-      } else if (isSignedBudget(b)) {
-        signed += 1;
-      } else {
-        unsigned += 1;
-      }
-    }
-
-    return { signed, unsigned, concluded };
-  }, [filtered]);
+  }, [user?.id, accessToken, period.start, period.end]);
 
   return (
     <div className="h-full overflow-y-auto pb-2 pr-1">
@@ -399,20 +410,20 @@ export default function DashboardPage() {
       {error && <Card className="border-red-200 bg-red-50 text-sm text-red-700">{error}</Card>}
 
       <div className="grid grid-cols-3 gap-2 md:gap-2.5">
-        <SummaryCard title="Assinados" value={summary.signed} tone="teal" />
-        <SummaryCard title="Sem assinatura" value={summary.unsigned} tone="amber" />
+        <SummaryCard title="Criados" value={summary.created} tone="teal" />
+        <SummaryCard title="Assinados" value={summary.signed} tone="amber" />
         <SummaryCard title="Concluídos" value={summary.concluded} tone="emerald" />
       </div>
 
       <Card className="rounded-3xl border-zinc-200 bg-white p-2.5 sm:p-3 min-h-[320px]">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-1.5">
           <div>
-            <h2 className="text-base font-semibold text-zinc-900">Distribuição por status</h2>
+            <h2 className="text-base font-semibold text-zinc-900">Quantidade por status</h2>
             <p className="text-xs text-zinc-500">Resumo do período selecionado</p>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
-            <span className="inline-flex items-center gap-1 text-cyan-700"><span className="h-2.5 w-2.5 rounded-full bg-cyan-600" />Assinados</span>
-            <span className="inline-flex items-center gap-1 text-amber-700"><span className="h-2.5 w-2.5 rounded-full bg-amber-500" />Sem assinatura</span>
+            <span className="inline-flex items-center gap-1 text-cyan-700"><span className="h-2.5 w-2.5 rounded-full bg-cyan-500" />Criados</span>
+            <span className="inline-flex items-center gap-1 text-orange-700"><span className="h-2.5 w-2.5 rounded-full bg-orange-600" />Assinados</span>
             <span className="inline-flex items-center gap-1 text-emerald-700"><span className="h-2.5 w-2.5 rounded-full bg-emerald-600" />Concluídos</span>
           </div>
         </div>
@@ -423,8 +434,9 @@ export default function DashboardPage() {
           </div>
         ) : (
           <PieChart
+            budgets={summary.budgets}
+            created={summary.created}
             signed={summary.signed}
-            unsigned={summary.unsigned}
             concluded={summary.concluded}
           />
         )}

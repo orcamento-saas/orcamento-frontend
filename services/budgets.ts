@@ -9,6 +9,7 @@ import type {
   BudgetPreviewHtmlBody,
   BudgetPreviewHtmlResponse,
   BudgetCardListResponse,
+  DashboardSummaryResponse,
 } from "@/types/budget";
 
 const BUDGETS = "budgets";
@@ -20,14 +21,35 @@ const inFlight = new Map<string, Promise<unknown>>();
 const localCache = new Map<string, { data: unknown; timestamp: number }>();
 const LOCAL_CACHE_MS = 30000;
 
+function invalidateBudgetsCache(): void {
+  for (const key of localCache.keys()) {
+    if (key.startsWith("GET:budgets")) {
+      localCache.delete(key);
+    }
+  }
+  for (const key of inFlight.keys()) {
+    if (key.startsWith("GET:budgets")) {
+      inFlight.delete(key);
+    }
+  }
+}
+
 export async function getBudgets(
   token: string,
-  params?: { status?: "DRAFT" | "SENT" | "SIGNED"; page?: number; limit?: number }
+  params?: {
+    status?: "DRAFT" | "SENT" | "SIGNED";
+    page?: number;
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+  }
 ): Promise<BudgetListResponse> {
   const sp = new URLSearchParams();
   if (params?.status) sp.set("status", params.status);
   if (params?.page != null) sp.set("page", String(params.page));
   if (params?.limit != null) sp.set("limit", String(params.limit));
+  if (params?.startDate) sp.set("startDate", params.startDate);
+  if (params?.endDate) sp.set("endDate", params.endDate);
   const q = sp.toString();
   const path = `${BUDGETS}${q ? `?${q}` : ""}`;
   const key = `GET:${path}`;
@@ -91,15 +113,20 @@ export async function createBudget(
   body: CreateBudgetBody,
   token: string
 ): Promise<Budget> {
-  return apiPost<Budget>(BUDGETS, body, token);
+  const created = await apiPost<Budget>(BUDGETS, body, token);
+  invalidateBudgetsCache();
+  return created;
 }
 
 export async function deleteBudget(id: string, token: string): Promise<void> {
-  return apiDelete(`${BUDGETS}/${id}`, token);
+  await apiDelete(`${BUDGETS}/${id}`, token);
+  invalidateBudgetsCache();
 }
 
 export async function generatePdf(id: string, token: string): Promise<Budget> {
-  return apiPost<Budget>(`${BUDGETS}/${id}/generate-pdf`, {}, token);
+  const updated = await apiPost<Budget>(`${BUDGETS}/${id}/generate-pdf`, {}, token);
+  invalidateBudgetsCache();
+  return updated;
 }
 
 export async function updateBudgetExecuted(
@@ -107,7 +134,9 @@ export async function updateBudgetExecuted(
   executed: boolean,
   token: string
 ): Promise<Budget> {
-  return apiPost<Budget>(`${BUDGETS}/${id}/executed`, { executed }, token);
+  const updated = await apiPost<Budget>(`${BUDGETS}/${id}/executed`, { executed }, token);
+  invalidateBudgetsCache();
+  return updated;
 }
 
 export async function updateBudgetSchedule(
@@ -115,7 +144,9 @@ export async function updateBudgetSchedule(
   body: { serviceScheduledAt: string | null },
   token: string
 ): Promise<Budget> {
-  return apiPost<Budget>(`${BUDGETS}/${id}/schedule`, body, token);
+  const updated = await apiPost<Budget>(`${BUDGETS}/${id}/schedule`, body, token);
+  invalidateBudgetsCache();
+  return updated;
 }
 
 export async function getPublicBudget(id: string): Promise<PublicBudgetView> {
@@ -135,8 +166,19 @@ export async function getNotificationsSummary(
   return apiGet<NotificationsSummaryResponse>(`${BUDGETS}/notifications`, token, false);
 }
 
+export async function getDashboardSummary(
+  token: string,
+  params: { startDate: string; endDate: string }
+): Promise<DashboardSummaryResponse> {
+  const sp = new URLSearchParams();
+  sp.set("startDate", params.startDate);
+  sp.set("endDate", params.endDate);
+  return apiGet<DashboardSummaryResponse>(`${BUDGETS}/dashboard-summary?${sp.toString()}`, token);
+}
+
 export async function markNotificationsSeen(token: string): Promise<void> {
-  return apiPost<void>(`${BUDGETS}/notifications/seen`, {}, token);
+  await apiPost<void>(`${BUDGETS}/notifications/seen`, {}, token);
+  invalidateBudgetsCache();
 }
 
 export async function getBudgetPreviewHtml(

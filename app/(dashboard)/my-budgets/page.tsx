@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { getBudgetCards, deleteBudget, updateBudgetExecuted } from "@/services/budgets";
 import type { Budget, BudgetCard } from "@/types/budget";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
+import { ShareBudget } from "@/components/ShareBudget";
 import { MyBudgetsSkeleton } from "@/components/Skeleton";
 import { BudgetScheduleModal } from "@/components/BudgetScheduleModal";
 import { formatScheduleDisplay } from "@/lib/budgetSchedule";
@@ -129,7 +129,7 @@ const IconAssinado = () => (
     <path d="M8 18c1.2-1.1 2.4-1.1 3.6 0s2.4 1.1 3.6 0" />
   </svg>
 );
-const IconAbrir = () => (
+const IconCompartilhar = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
 );
 const IconExcluir = () => (
@@ -148,6 +148,7 @@ export default function MyBudgetsPage() {
   const [signedFilter, setSignedFilter] = useState<"all" | "signed" | "unsigned" | "concluded">("all");
   const [updatingExecutedId, setUpdatingExecutedId] = useState<string | null>(null);
   const [scheduleTarget, setScheduleTarget] = useState<BudgetCard | null>(null);
+  const [shareBudgetId, setShareBudgetId] = useState<string | null>(null);
 
   // Debounce search para reduzir requests
   const debouncedSearch = useDebounce(search, 500);
@@ -208,7 +209,7 @@ export default function MyBudgetsPage() {
             ? {
                 ...updatedCard,
                 signedAt: b.signedAt,
-                executedAt: executed ? new Date().toISOString() : null,
+                executedAt: updated.executedAt ?? null,
               }
             : b
         )
@@ -286,11 +287,10 @@ export default function MyBudgetsPage() {
                         {b.clientName ?? "—"}
                       </p>
                       <p className="mt-0.5 text-xs text-zinc-600 sm:mt-1 sm:text-sm">
-                        {b.title ?? "—"}
+                        {`${b.title ?? "—"} - Total ${formatCurrency(b.value)}`}
                       </p>
-                      <p className="mt-0.5 text-xs text-zinc-700 sm:mt-1 sm:text-sm">Total {formatCurrency(b.value)}</p>
                         </div>
-                        <div className="flex flex-wrap items-center justify-end gap-2">
+                        <div className="flex w-full items-center justify-between sm:w-auto sm:flex-wrap sm:justify-end sm:gap-2">
                           <button
                             type="button"
                             className={`${btnBase} ${btnAmber}`}
@@ -328,13 +328,14 @@ export default function MyBudgetsPage() {
                               <IconAssinado />
                             </span>
                           )}
-                          <Link
-                            href={`/dashboard/budget/${b.id}`}
+                          <button
+                            type="button"
                             className={`${btnBase} ${btnBlue}`}
-                            title="Abrir"
+                            title="Compartilhar orçamento para assinatura"
+                            onClick={() => setShareBudgetId(b.id)}
                           >
-                            <IconAbrir />
-                          </Link>
+                            <IconCompartilhar />
+                          </button>
                           <Button
                             variant="danger"
                             size="sm"
@@ -360,39 +361,93 @@ export default function MyBudgetsPage() {
                           </label>
                         </div>
                         <div className="rounded-md bg-white/80 px-3 py-2">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Criação</p>
                           {b.createdAt ? (
-                            <p className="text-xs font-semibold text-emerald-700 sm:text-sm">{getDisplayDate(b)}</p>
+                            <>
+                              <p className="text-xs font-semibold sm:hidden">
+                                <span className="text-zinc-500">Criação </span>
+                                <span className="text-emerald-700">{getDisplayDate(b)}</span>
+                              </p>
+                              <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">Criação</p>
+                              <p className="hidden text-xs font-semibold text-emerald-700 sm:block sm:text-sm">{getDisplayDate(b)}</p>
+                            </>
                           ) : (
-                            <p className="text-xs font-semibold text-amber-700 sm:text-sm">Não informado</p>
+                            <>
+                              <p className="text-xs font-semibold sm:hidden">
+                                <span className="text-zinc-500">Criação </span>
+                                <span className="text-amber-700">Não informado</span>
+                              </p>
+                              <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">Criação</p>
+                              <p className="hidden text-xs font-semibold text-amber-700 sm:block sm:text-sm">Não informado</p>
+                            </>
                           )}
                         </div>
                         <div className="rounded-md bg-white/80 px-3 py-2">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Assinatura</p>
                           {b.signedAt ? (
-                            <p className="text-xs font-semibold text-emerald-700 sm:text-sm">{formatDateShort(b.signedAt)}</p>
+                            <>
+                              <p className="text-xs font-semibold sm:hidden">
+                                <span className="text-zinc-500">Assinatura </span>
+                                <span className="text-emerald-700">{formatDateShort(b.signedAt)}</span>
+                              </p>
+                              <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">Assinatura</p>
+                              <p className="hidden text-xs font-semibold text-emerald-700 sm:block sm:text-sm">{formatDateShort(b.signedAt)}</p>
+                            </>
                           ) : (
-                            <p className="text-xs font-semibold text-amber-700 sm:text-sm">Não assinado</p>
+                            <>
+                              <p className="text-xs font-semibold sm:hidden">
+                                <span className="text-zinc-500">Assinatura </span>
+                                <span className="text-amber-700">Não assinado</span>
+                              </p>
+                              <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">Assinatura</p>
+                              <p className="hidden text-xs font-semibold text-amber-700 sm:block sm:text-sm">Não assinado</p>
+                            </>
                           )}
                         </div>
                         <div className="rounded-md bg-white/80 px-3 py-2">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Agendamento</p>
                           {b.serviceScheduledAt ? (
-                            <p className="text-xs font-semibold text-emerald-700 sm:text-sm">
-                              {formatScheduleDisplay(b.serviceScheduledAt)}
-                            </p>
+                            <>
+                              <p className="text-xs font-semibold sm:hidden">
+                                <span className="text-zinc-500">Agendamento </span>
+                                <span className="text-emerald-700">{formatScheduleDisplay(b.serviceScheduledAt)}</span>
+                              </p>
+                              <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">Agendamento</p>
+                              <p className="hidden text-xs font-semibold text-emerald-700 sm:block sm:text-sm">
+                                {formatScheduleDisplay(b.serviceScheduledAt)}
+                              </p>
+                            </>
                           ) : (
-                            <p className="text-xs font-semibold text-amber-700 sm:text-sm">Sem agendamento</p>
+                            <>
+                              <p className="text-xs font-semibold sm:hidden">
+                                <span className="text-zinc-500">Agendamento </span>
+                                <span className="text-amber-700">Sem agendamento</span>
+                              </p>
+                              <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">Agendamento</p>
+                              <p className="hidden text-xs font-semibold text-amber-700 sm:block sm:text-sm">Sem agendamento</p>
+                            </>
                           )}
                         </div>
                         <div className="rounded-md bg-white/80 px-3 py-2">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Conclusão</p>
                           {b.executed ? (
-                            <p className="text-xs font-semibold text-emerald-700 sm:text-sm">
-                              {b.executedAt ? formatDateShort(b.executedAt) : "Concluído"}
-                            </p>
+                            <>
+                              <p className="text-xs font-semibold sm:hidden">
+                                <span className="text-zinc-500">Conclusão </span>
+                                <span className="text-emerald-700">
+                                  {b.executedAt ? formatDateShort(b.executedAt) : "Concluído"}
+                                </span>
+                              </p>
+                              <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">Conclusão</p>
+                              <p className="hidden text-xs font-semibold text-emerald-700 sm:block sm:text-sm">
+                                {b.executedAt ? formatDateShort(b.executedAt) : "Concluído"}
+                              </p>
+                            </>
                           ) : (
-                            <p className="text-xs font-semibold text-amber-700 sm:text-sm">Não concluído</p>
+                            <>
+                              <p className="text-xs font-semibold sm:hidden">
+                                <span className="text-zinc-500">Conclusão </span>
+                                <span className="text-amber-700">Não concluído</span>
+                              </p>
+                              <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">Conclusão</p>
+                              <p className="hidden text-xs font-semibold text-amber-700 sm:block sm:text-sm">Não concluído</p>
+                            </>
                           )}
                         </div>
                       </div>
@@ -442,6 +497,19 @@ export default function MyBudgetsPage() {
             Excluir
           </Button>
         </div>
+      </Modal>
+
+      <Modal
+        isOpen={shareBudgetId !== null}
+        onClose={() => setShareBudgetId(null)}
+        title="Compartilhar orçamento para assinatura"
+      >
+        {shareBudgetId && (
+          <ShareBudget
+            budgetId={shareBudgetId}
+            onClose={() => setShareBudgetId(null)}
+          />
+        )}
       </Modal>
     </div>
   );

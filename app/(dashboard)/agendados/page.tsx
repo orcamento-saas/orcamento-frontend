@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { BudgetScheduleModal } from "@/components/BudgetScheduleModal";
 import type { BudgetScheduleTarget } from "@/components/BudgetScheduleModal";
+import { ShareBudget } from "@/components/ShareBudget";
 import { useAuth } from "@/hooks/useAuth";
 import { getBudgets, updateBudgetExecuted } from "@/services/budgets";
 import type { Budget } from "@/types/budget";
@@ -180,7 +180,7 @@ const IconAssinado = () => (
     <path d="M8 18c1.2-1.1 2.4-1.1 3.6 0s2.4 1.1 3.6 0" />
   </svg>
 );
-const IconAbrir = () => (
+const IconCompartilhar = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -202,6 +202,7 @@ export default function AgendadosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingExecutedId, setUpdatingExecutedId] = useState<string | null>(null);
+  const [shareBudgetId, setShareBudgetId] = useState<string | null>(null);
 
   const [preset, setPreset] = useState<RangePreset>("today");
   const today = new Date();
@@ -254,7 +255,7 @@ export default function AgendadosPage() {
           b.id === id
             ? {
                 ...updated,
-                executedAt: executed ? new Date().toISOString() : null,
+                executedAt: updated.executedAt ?? null,
               }
             : b
         )
@@ -637,13 +638,10 @@ export default function AgendadosPage() {
                                 {b.clientName ?? "—"}
                               </p>
                               <p className="mt-0.5 text-xs text-zinc-600 sm:mt-1 sm:text-sm">
-                                {b.title ?? "—"}
-                              </p>
-                              <p className="mt-0.5 text-xs text-zinc-700 sm:mt-1 sm:text-sm">
-                                Total {formatCurrency(b.value)}
+                                {`${b.title ?? "—"} - Total ${formatCurrency(b.value)}`}
                               </p>
                             </div>
-                            <div className="flex flex-wrap items-center justify-end gap-2">
+                            <div className="flex w-full items-center justify-between sm:w-auto sm:flex-wrap sm:justify-end sm:gap-2">
                               <button
                                 type="button"
                                 className={`${btnBase} ${btnAmber}`}
@@ -687,13 +685,14 @@ export default function AgendadosPage() {
                                   <IconAssinado />
                                 </span>
                               )}
-                              <Link
-                                href={`/dashboard/budget/${b.id}`}
+                              <button
+                                type="button"
                                 className={`${btnBase} ${btnBlue}`}
-                                title="Abrir"
+                                title="Compartilhar orçamento para assinatura"
+                                onClick={() => setShareBudgetId(b.id)}
                               >
-                                <IconAbrir />
-                              </Link>
+                                <IconCompartilhar />
+                              </button>
                             </div>
                           </div>
                           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
@@ -712,57 +711,121 @@ export default function AgendadosPage() {
                               </label>
                             </div>
                             <div className="rounded-md bg-white/80 px-3 py-2">
-                              <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                                Criação
-                              </p>
                               {b.createdAt ? (
-                                <p className="text-xs font-semibold text-emerald-700 sm:text-sm">
-                                  {getDisplayDate(b)}
-                                </p>
+                                <>
+                                  <p className="text-xs font-semibold sm:hidden">
+                                    <span className="text-zinc-500">Criação </span>
+                                    <span className="text-emerald-700">{getDisplayDate(b)}</span>
+                                  </p>
+                                  <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">
+                                    Criação
+                                  </p>
+                                  <p className="hidden text-xs font-semibold text-emerald-700 sm:block sm:text-sm">
+                                    {getDisplayDate(b)}
+                                  </p>
+                                </>
                               ) : (
-                                <p className="text-xs font-semibold text-amber-700 sm:text-sm">
-                                  Não informado
-                                </p>
+                                <>
+                                  <p className="text-xs font-semibold sm:hidden">
+                                    <span className="text-zinc-500">Criação </span>
+                                    <span className="text-amber-700">Não informado</span>
+                                  </p>
+                                  <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">
+                                    Criação
+                                  </p>
+                                  <p className="hidden text-xs font-semibold text-amber-700 sm:block sm:text-sm">
+                                    Não informado
+                                  </p>
+                                </>
                               )}
                             </div>
                             <div className="rounded-md bg-white/80 px-3 py-2">
-                              <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                                Assinatura
-                              </p>
                               {b.signedPdfUrl ? (
-                                <p className="text-xs font-semibold text-emerald-700 sm:text-sm">Assinado</p>
+                                <>
+                                  <p className="text-xs font-semibold sm:hidden">
+                                    <span className="text-zinc-500">Assinatura </span>
+                                    <span className="text-emerald-700">Assinado</span>
+                                  </p>
+                                  <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">
+                                    Assinatura
+                                  </p>
+                                  <p className="hidden text-xs font-semibold text-emerald-700 sm:block sm:text-sm">
+                                    Assinado
+                                  </p>
+                                </>
                               ) : (
-                                <p className="text-xs font-semibold text-amber-700 sm:text-sm">
-                                  Não assinado
-                                </p>
+                                <>
+                                  <p className="text-xs font-semibold sm:hidden">
+                                    <span className="text-zinc-500">Assinatura </span>
+                                    <span className="text-amber-700">Não assinado</span>
+                                  </p>
+                                  <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">
+                                    Assinatura
+                                  </p>
+                                  <p className="hidden text-xs font-semibold text-amber-700 sm:block sm:text-sm">
+                                    Não assinado
+                                  </p>
+                                </>
                               )}
                             </div>
                             <div className="rounded-md bg-white/80 px-3 py-2">
-                              <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                                Agendamento
-                              </p>
                               {b.serviceScheduledAt ? (
-                                <p className="text-xs font-semibold text-emerald-700 sm:text-sm">
-                                  {formatScheduleDateTime(b.serviceScheduledAt)}
-                                </p>
+                                <>
+                                  <p className="text-xs font-semibold sm:hidden">
+                                    <span className="text-zinc-500">Agendamento </span>
+                                    <span className="text-emerald-700">{formatScheduleDateTime(b.serviceScheduledAt)}</span>
+                                  </p>
+                                  <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">
+                                    Agendamento
+                                  </p>
+                                  <p className="hidden text-xs font-semibold text-emerald-700 sm:block sm:text-sm">
+                                    {formatScheduleDateTime(b.serviceScheduledAt)}
+                                  </p>
+                                </>
                               ) : (
-                                <p className="text-xs font-semibold text-amber-700 sm:text-sm">
-                                  Sem agendamento
-                                </p>
+                                <>
+                                  <p className="text-xs font-semibold sm:hidden">
+                                    <span className="text-zinc-500">Agendamento </span>
+                                    <span className="text-amber-700">Sem agendamento</span>
+                                  </p>
+                                  <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">
+                                    Agendamento
+                                  </p>
+                                  <p className="hidden text-xs font-semibold text-amber-700 sm:block sm:text-sm">
+                                    Sem agendamento
+                                  </p>
+                                </>
                               )}
                             </div>
                             <div className="rounded-md bg-white/80 px-3 py-2">
-                              <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                                Conclusão
-                              </p>
                               {b.executed ? (
-                                <p className="text-xs font-semibold text-emerald-700 sm:text-sm">
-                                  {b.executedAt ? formatDateShort(b.executedAt) : "Concluído"}
-                                </p>
+                                <>
+                                  <p className="text-xs font-semibold sm:hidden">
+                                    <span className="text-zinc-500">Conclusão </span>
+                                    <span className="text-emerald-700">
+                                      {b.executedAt ? formatDateShort(b.executedAt) : "Concluído"}
+                                    </span>
+                                  </p>
+                                  <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">
+                                    Conclusão
+                                  </p>
+                                  <p className="hidden text-xs font-semibold text-emerald-700 sm:block sm:text-sm">
+                                    {b.executedAt ? formatDateShort(b.executedAt) : "Concluído"}
+                                  </p>
+                                </>
                               ) : (
-                                <p className="text-xs font-semibold text-amber-700 sm:text-sm">
-                                  Não concluído
-                                </p>
+                                <>
+                                  <p className="text-xs font-semibold sm:hidden">
+                                    <span className="text-zinc-500">Conclusão </span>
+                                    <span className="text-amber-700">Não concluído</span>
+                                  </p>
+                                  <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">
+                                    Conclusão
+                                  </p>
+                                  <p className="hidden text-xs font-semibold text-amber-700 sm:block sm:text-sm">
+                                    Não concluído
+                                  </p>
+                                </>
                               )}
                             </div>
                           </div>
@@ -785,6 +848,30 @@ export default function AgendadosPage() {
           setBudgets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
         }}
       />
+
+      {shareBudgetId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-4 sm:p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-zinc-900">
+                Compartilhar orçamento para assinatura
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShareBudgetId(null)}
+                className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                aria-label="Fechar"
+              >
+                x
+              </button>
+            </div>
+            <ShareBudget
+              budgetId={shareBudgetId}
+              onClose={() => setShareBudgetId(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

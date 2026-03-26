@@ -710,7 +710,7 @@ export default function CreateBudgetPage() {
       } catch (_) {
         // PDF será gerado depois na tela do orçamento se falhar
       }
-      router.push(`/dashboard/budget/${budget.id}`);
+      router.push("/my-budgets");
       router.refresh();
       // Não resetamos loading aqui - deixa a animação rodando até navegar
     } catch (err) {

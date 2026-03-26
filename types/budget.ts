@@ -155,3 +155,10 @@ export interface NotificationsSummaryResponse {
   unseenCount: number;
   items: NotificationItem[];
 }
+
+export interface DashboardSummaryResponse {
+  budgets: number;
+  created: number;
+  signed: number;
+  concluded: number;
+}
