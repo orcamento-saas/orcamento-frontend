@@ -163,7 +163,7 @@ function PieChart({
 }
 
 export default function DashboardPage() {
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -213,7 +213,7 @@ export default function DashboardPage() {
     };
 
     void run();
-  }, [accessToken]);
+  }, [user?.id, !!accessToken]);
 
   const period = useMemo(
     () => buildPeriod(preset, customStart, customEnd),

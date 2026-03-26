@@ -32,7 +32,7 @@ export default function DashboardLayout({
   const [bellAnimate, setBellAnimate] = useState(false);
   const previousUnseenCountRef = useRef(0);
   const { isNavigating, navigateWithSkeleton } = useSkeletonNavigation();
-  const { user, accessToken, account, isAdmin, plan } = useAuth();
+  const { user, session, loading, accessToken, account, isAdmin, plan, isSuspended, signOut } = useAuth();
   const pathname = usePathname();
 
   const userDisplayName =
@@ -136,7 +136,12 @@ export default function DashboardLayout({
   };
 
   return (
-    <AuthGuard>
+    <AuthGuard
+      session={session}
+      loading={loading}
+      isSuspended={isSuspended}
+      signOut={signOut}
+    >
       <div className="flex h-screen overflow-hidden bg-gray-50">
         {/* Sidebar lateral - apenas desktop */}
         <aside
@@ -214,7 +219,7 @@ export default function DashboardLayout({
                 </div>
               )}
             </button>
-            <LogoutButton collapsed={collapsed} />
+            <LogoutButton collapsed={collapsed} onSignOut={signOut} />
           </div>
         </aside>
 
@@ -308,7 +313,10 @@ export default function DashboardLayout({
                       </p>
                     </div>
                   </button>
-                  <MobileLogoutButton onClick={() => setMobileMenuOpen(false)} />
+                  <MobileLogoutButton
+                    onClick={() => setMobileMenuOpen(false)}
+                    onSignOut={signOut}
+                  />
                 </div>
               </nav>
             </div>
@@ -520,12 +528,16 @@ function MobileNavLink({
   );
 }
 
-function MobileLogoutButton({ onClick }: { onClick: () => void }) {
-  const { signOut } = useAuth();
-  
+function MobileLogoutButton({
+  onClick,
+  onSignOut,
+}: {
+  onClick: () => void;
+  onSignOut: () => Promise<void>;
+}) {
   const handleLogout = () => {
     onClick();
-    signOut();
+    void onSignOut();
   };
   
   return (
@@ -611,11 +623,16 @@ function NavLink({
   );
 }
 
-function LogoutButton({ collapsed }: { collapsed: boolean }) {
-  const { signOut } = useAuth();
+function LogoutButton({
+  collapsed,
+  onSignOut,
+}: {
+  collapsed: boolean;
+  onSignOut: () => Promise<void>;
+}) {
   return (
     <button
-      onClick={() => signOut()}
+      onClick={() => void onSignOut()}
       title={collapsed ? "Sair" : undefined}
       className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors text-white/80 hover:bg-white/10 hover:text-white w-full ${
         collapsed ? "justify-center px-0" : "justify-start"

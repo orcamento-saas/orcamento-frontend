@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Session } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 import type { AccountSummary, UserPlan } from "@/types/account";
 import { ApiRequestError, type ApiError } from "@/lib/api";
@@ -137,6 +137,34 @@ async function loadAccount(
   return accountRequest;
 }
 
+function shouldSyncAccount(
+  event: AuthChangeEvent,
+  previousSession: Session | null,
+  nextSession: Session | null
+): boolean {
+  if (!nextSession?.access_token) {
+    return true;
+  }
+
+  if (!previousSession?.access_token) {
+    return true;
+  }
+
+  const previousUserId = previousSession.user?.id ?? null;
+  const nextUserId = nextSession.user?.id ?? null;
+  if (previousUserId !== nextUserId) {
+    return true;
+  }
+
+  // Ao voltar foco da aba, o Supabase pode emitir TOKEN_REFRESHED.
+  // Nesse caso, evita novo /me para a mesma conta.
+  if (event === "TOKEN_REFRESHED") {
+    return false;
+  }
+
+  return event === "USER_UPDATED";
+}
+
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -194,15 +222,18 @@ export function useAuth(): UseAuthReturn {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => {
+    } = supabase.auth.onAuthStateChange((event, s) => {
       if (!mountedRef.current) return;
-      
+
+      const previousSession = sessionCache;
       sessionCache = s;
       lastCheck = Date.now();
       setSession(s);
       setUser(s?.user ?? null);
       setSessionLoading(false);
-      void syncAccount(s);
+      if (shouldSyncAccount(event, previousSession, s)) {
+        void syncAccount(s);
+      }
     });
 
     return () => {

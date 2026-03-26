@@ -2,18 +2,44 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import type { Session } from "@supabase/supabase-js";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 
-export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { session, loading, isSuspended, signOut } = useAuth();
+type AuthGuardProps = {
+  children: React.ReactNode;
+  session?: Session | null;
+  loading?: boolean;
+  isSuspended?: boolean;
+  signOut?: () => Promise<void>;
+};
+
+export function AuthGuard({
+  children,
+  session: sessionProp,
+  loading: loadingProp,
+  isSuspended: isSuspendedProp,
+  signOut: signOutProp,
+}: AuthGuardProps) {
+  const auth = useAuth();
+  const session = sessionProp ?? auth.session;
+  const loading = loadingProp ?? auth.loading;
+  const isSuspended = isSuspendedProp ?? auth.isSuspended;
+  const signOut = signOutProp ?? auth.signOut;
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) return;
-    if (!session) {
-      router.replace("/login");
-    }
+    if (loading || session) return;
+
+    // Evita redirecionamento por transição momentânea da sessão
+    // enquanto a aba volta ao foco e o auth é revalidado.
+    const timer = window.setTimeout(() => {
+      if (!session) {
+        router.replace("/login");
+      }
+    }, 1200);
+
+    return () => window.clearTimeout(timer);
   }, [session, loading, router]);
 
   if (loading) {
