@@ -164,7 +164,7 @@ export function AuthLoginPage() {
       await primeAuthStateAfterPasswordLogin(data.session);
       router.push("/dashboard");
       router.refresh();
-git     } finally {
+    } finally {
       setLoading(false);
     }
   }
