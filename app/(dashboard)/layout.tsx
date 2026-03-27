@@ -31,7 +31,7 @@ export default function DashboardLayout({
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [bellAnimate, setBellAnimate] = useState(false);
   const previousUnseenCountRef = useRef(0);
-  const { isNavigating, navigateWithSkeleton } = useSkeletonNavigation();
+  const { isNavigating, pendingHref, navigateWithSkeleton } = useSkeletonNavigation();
   const { user, session, loading, accessToken, account, isAdmin, plan, isSuspended, signOut } = useAuth();
   const pathname = usePathname();
 
@@ -117,17 +117,17 @@ export default function DashboardLayout({
   const renderSkeletonForRoute = () => {
     if (!isNavigating) return children;
 
-    if (pathname.includes("/account")) {
+    const routeForSkeleton = pendingHref ?? pathname;
+
+    if (routeForSkeleton.includes("/account")) {
       return children;
     }
 
-    // Como não temos acesso direto à próxima rota durante navegação,
-    // vamos usar um skeleton genérico que funciona bem para ambas as páginas
-    if (pathname.includes("/agendados")) {
+    if (routeForSkeleton.includes("/agendados")) {
       return <AgendadosSkeleton />;
     }
-    if (pathname.includes('/my-budgets') || pathname.includes('/create-budget')) {
-      return pathname.includes('/create-budget') ? 
+    if (routeForSkeleton.includes('/my-budgets') || routeForSkeleton.includes('/create-budget')) {
+      return routeForSkeleton.includes('/create-budget') ? 
         <CreateBudgetSkeleton /> : 
         <MyBudgetsSkeleton />;
     }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { primeAuthStateAfterPasswordLogin } from "@/hooks/useAuth";
 import { formatPhoneBr, phoneDigits } from "@/lib/formatPhone";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -146,17 +147,24 @@ export function AuthLoginPage() {
     setSuccess(null);
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.signInWithPassword({
+      const { data, error: err } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+
       if (err) {
         setError(err.message);
         return;
       }
+      if (!data.session) {
+        setError("Sessão indisponível. Tente novamente.");
+        return;
+      }
+
+      await primeAuthStateAfterPasswordLogin(data.session);
       router.push("/dashboard");
       router.refresh();
-    } finally {
+git     } finally {
       setLoading(false);
     }
   }

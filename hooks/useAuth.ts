@@ -137,6 +137,20 @@ async function loadAccount(
   return accountRequest;
 }
 
+/**
+ * Após `signInWithPassword` bem-sucedido: grava sessão no cache do módulo e pré-busca `/me`,
+ * para o dashboard não esperar `getSession()` + conta em série no primeiro paint.
+ */
+export async function primeAuthStateAfterPasswordLogin(
+  session: Session
+): Promise<void> {
+  sessionCache = session;
+  lastCheck = Date.now();
+  if (session.access_token) {
+    await loadAccount(session.access_token, session.user);
+  }
+}
+
 function shouldSyncAccount(
   event: AuthChangeEvent,
   previousSession: Session | null,
