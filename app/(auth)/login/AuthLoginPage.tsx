@@ -396,7 +396,7 @@ export function AuthLoginPage() {
                     }}
                     className="font-medium text-teal-600 hover:text-teal-500"
                   >
-                    Criar agora
+                    Criar conta agora
                   </button>
                 </>
               ) : (
