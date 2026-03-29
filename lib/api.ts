@@ -1,4 +1,36 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+function getApiBase(): string {
+  return (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+}
+
+/**
+ * Monta URL absoluta para fetch. Paths relativos (/api/backend/...) no SSR
+ * precisam de origem explícita (VERCEL_URL ou localhost).
+ */
+function buildApiUrl(path: string): string {
+  const base = getApiBase();
+  const normalizedPath = path.replace(/^\//, "");
+
+  if (!base) {
+    return `/${normalizedPath}`;
+  }
+
+  if (base.startsWith("http://") || base.startsWith("https://")) {
+    return `${base}/${normalizedPath}`;
+  }
+
+  const relative = `/${base.replace(/^\//, "")}/${normalizedPath}`.replace(/\/{2,}/g, "/");
+
+  if (typeof window === "undefined") {
+    const vercelUrl = process.env.VERCEL_URL;
+    if (vercelUrl) {
+      return `https://${vercelUrl}${relative}`;
+    }
+    const port = process.env.PORT ?? "3000";
+    return `http://127.0.0.1:${port}${relative}`;
+  }
+
+  return relative;
+}
 
 // Cache simples para requests GET
 const requestCache = new Map<string, { data: unknown; timestamp: number }>();
@@ -71,7 +103,7 @@ async function request<T>(
   options: RequestInit & { token?: string; useCache?: boolean } = {}
 ): Promise<T> {
   const { token, useCache = false, ...init } = options;
-  const url = `${BASE_URL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+  const url = buildApiUrl(path);
   
   // Cache para requests GET
   if (useCache && init.method === "GET") {
