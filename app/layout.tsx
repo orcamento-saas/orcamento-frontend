@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Orçamento",
-  description: "Geração de orçamentos",
+  title: "Orçamento LM",
+  description: "Orçamentos profissionais com PDF e assinatura digital",
 };
 
 export default function RootLayout({

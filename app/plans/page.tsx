@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { createBillingCheckout, type BillingMethod } from "@/services/billing";
 import type { ApiError } from "@/lib/api";
+import { buildLoginUrl, PLANS_POST_AUTH_PATH } from "@/lib/authRedirect";
 
 type PlansLeftFeature = {
   imageSrc: string;
@@ -84,7 +85,7 @@ export default function PlansPage() {
     setUpgradeError(null);
 
     if (!accessToken) {
-      router.push("/login");
+      router.push(buildLoginUrl({ next: PLANS_POST_AUTH_PATH }));
       return;
     }
 
@@ -216,7 +217,7 @@ export default function PlansPage() {
 
               <div className="mt-auto">
                 <Link
-                  href="/login?mode=register"
+                  href={buildLoginUrl({ mode: "register", next: PLANS_POST_AUTH_PATH })}
                   className="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
                 >
                   Começar grátis
@@ -344,7 +345,10 @@ export default function PlansPage() {
           <div className="mt-6 text-center text-xs text-zinc-500">
             <p>
               Já tem uma conta?{" "}
-              <Link href="/login" className="font-semibold text-teal-700 hover:underline">
+              <Link
+                href={buildLoginUrl({ next: PLANS_POST_AUTH_PATH })}
+                className="font-semibold text-teal-700 hover:underline"
+              >
                 Acesse aqui
               </Link>
               .

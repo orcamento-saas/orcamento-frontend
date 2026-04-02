@@ -15,7 +15,7 @@ export function LegalPublicLayout({ title, children }: Props) {
             ← Voltar ao login
           </Link>
           <Link href="/login" className="shrink-0" aria-label="Ir para o login">
-            <img src="/plan/logo.png" alt="Logo" className="h-8 w-auto object-contain opacity-90" />
+            <img src="/plan/logo.png" alt="Orçamento LM" className="h-8 w-auto object-contain opacity-90" />
           </Link>
         </div>
       </header>

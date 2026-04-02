@@ -35,7 +35,9 @@ export type SystemEventType =
   | "ADMIN_USER_PLAN_UPDATED"
   | "ADMIN_USER_SUSPENDED"
   | "ADMIN_USER_UNSUSPENDED"
-  | "SYSTEM_ERROR";
+  | "SYSTEM_ERROR"
+  | "ASAAS_BILLING_WEBHOOK"
+  | "USER_PRO_SUBSCRIPTION_CANCELLED";
 
 export type SystemEventSeverity = "INFO" | "WARN" | "ERROR";
 

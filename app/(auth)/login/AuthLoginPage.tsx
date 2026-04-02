@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { primeAuthStateAfterPasswordLogin } from "@/hooks/useAuth";
+import {
+  DEFAULT_POST_LOGIN_PATH,
+  getSafeNextPath,
+} from "@/lib/authRedirect";
 import { formatPhoneBr, phoneDigits } from "@/lib/formatPhone";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -56,6 +60,36 @@ export function AuthLoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+
+  const nextDest = useMemo(
+    () => getSafeNextPath(searchParams.get("next")),
+    [searchParams]
+  );
+
+  /** Troca rota em /login mantendo `next` (fluxo planos / captura). */
+  const replaceLoginPreserveNext = useCallback(
+    (extra: Record<string, string> = {}) => {
+      const q = new URLSearchParams(extra);
+      if (nextDest) q.set("next", nextDest);
+      const s = q.toString();
+      router.replace(s ? `/login?${s}` : "/login", { scroll: false });
+    },
+    [router, nextDest]
+  );
+
+  /** Já autenticado e veio com destino: vai direto (ex.: /plans). */
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled || !data.session?.user || !nextDest) return;
+      router.replace(nextDest);
+      router.refresh();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, router, nextDest]);
 
   // Garante que ao abrir /login?mode=register a tela já venha em "Criar conta"
   const [mode, setMode] = useState<Mode>(() => {
@@ -128,11 +162,18 @@ export function AuthLoginPage() {
   }, [searchParams]);
 
   useEffect(() => {
+    const qpEmail = searchParams.get("email");
+    const qpName = searchParams.get("name");
+    if (qpEmail?.trim()) setEmail((prev) => prev || qpEmail.trim());
+    if (qpName?.trim()) setName((prev) => prev || qpName.trim());
+  }, [searchParams]);
+
+  useEffect(() => {
     if (searchParams.get("reset") !== "success") return;
     setSuccess("Senha alterada com sucesso. Entre com a nova senha.");
     setError(null);
-    router.replace("/login", { scroll: false });
-  }, [searchParams, router]);
+    replaceLoginPreserveNext({});
+  }, [searchParams, replaceLoginPreserveNext]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -162,7 +203,7 @@ export function AuthLoginPage() {
       }
 
       await primeAuthStateAfterPasswordLogin(data.session);
-      router.push("/dashboard");
+      router.push(nextDest ?? DEFAULT_POST_LOGIN_PATH);
       router.refresh();
     } finally {
       setLoading(false);
@@ -209,14 +250,14 @@ export function AuthLoginPage() {
         return;
       }
       if (data.session) {
-        router.push("/dashboard");
+        router.push(nextDest ?? DEFAULT_POST_LOGIN_PATH);
         router.refresh();
         return;
       }
 
       setSuccess("Conta criada. Verifique seu e-mail e confirme para entrar.");
       setMode("login");
-      router.replace("/login", { scroll: false });
+      replaceLoginPreserveNext({});
       setPassword("");
       setConfirmPassword("");
     } finally {
@@ -376,7 +417,7 @@ export function AuthLoginPage() {
                       setError(null);
                       setSuccess(null);
                       setMode("login");
-                      router.replace("/login", { scroll: false });
+                      replaceLoginPreserveNext({});
                     }}
                     className="font-medium text-teal-600 hover:text-teal-500"
                   >
@@ -392,7 +433,7 @@ export function AuthLoginPage() {
                       setError(null);
                       setSuccess(null);
                       setMode("register");
-                      router.replace("/login?mode=register", { scroll: false });
+                      replaceLoginPreserveNext({ mode: "register" });
                     }}
                     className="font-medium text-teal-600 hover:text-teal-500"
                   >
@@ -408,7 +449,7 @@ export function AuthLoginPage() {
                       setError(null);
                       setSuccess(null);
                       setMode("login");
-                      router.replace("/login", { scroll: false });
+                      replaceLoginPreserveNext({});
                     }}
                     className="font-medium text-teal-600 hover:text-teal-500"
                   >
@@ -548,7 +589,7 @@ export function AuthLoginPage() {
                     setError(null);
                     setSuccess(null);
                     setMode("forgot");
-                    router.replace("/login?mode=forgot", { scroll: false });
+                    replaceLoginPreserveNext({ mode: "forgot" });
                   }}
                 >
                   Esqueceu a senha?

@@ -28,6 +28,23 @@ type AdminTab = "users" | "events";
 type EventTypeFilter = "ALL" | SystemEventType;
 type EventSeverityFilter = "ALL" | SystemEventSeverity;
 
+const EVENT_TYPE_LABELS: Record<SystemEventType, string> = {
+  LOGIN_SUCCESS: "Login",
+  LOGOUT_SUCCESS: "Logout",
+  BUDGET_CREATED: "Orçamento criado",
+  BUDGET_SIGNED: "Orçamento assinado",
+  ADMIN_USER_PLAN_UPDATED: "Plano alterado (admin)",
+  ADMIN_USER_SUSPENDED: "Conta suspensa",
+  ADMIN_USER_UNSUSPENDED: "Conta reativada",
+  SYSTEM_ERROR: "Erro de sistema",
+  ASAAS_BILLING_WEBHOOK: "Cobrança Asaas (webhook)",
+  USER_PRO_SUBSCRIPTION_CANCELLED: "Usuário cancelou o Pro",
+};
+
+function formatEventTypeLabel(type: SystemEventType): string {
+  return EVENT_TYPE_LABELS[type] ?? type;
+}
+
 type ActionModalState =
   | {
       type: "plan";
@@ -543,7 +560,7 @@ export default function AdminPage() {
                   <Input
                     value={eventSearch}
                     onChange={(event) => setEventSearch(event.target.value)}
-                    placeholder="Buscar por rota"
+                    placeholder="Buscar por e-mail do usuário"
                   />
                   <select
                     value={eventTypeFilter}
@@ -559,6 +576,8 @@ export default function AdminPage() {
                     <option value="ADMIN_USER_SUSPENDED">Conta suspensa</option>
                     <option value="ADMIN_USER_UNSUSPENDED">Conta reativada</option>
                     <option value="SYSTEM_ERROR">Erro de sistema</option>
+                    <option value="ASAAS_BILLING_WEBHOOK">Cobrança Asaas (webhook)</option>
+                    <option value="USER_PRO_SUBSCRIPTION_CANCELLED">Usuário cancelou o Pro</option>
                   </select>
                   <select
                     value={eventSeverityFilter}
@@ -720,12 +739,12 @@ export default function AdminPage() {
                           <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${event.severity === "ERROR" ? "bg-red-100 text-red-700" : event.severity === "WARN" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
                             {event.severity}
                           </span>
-                          <p className="text-xs font-semibold text-zinc-700">{event.type}</p>
+                          <p className="text-xs font-semibold text-zinc-700">{formatEventTypeLabel(event.type)}</p>
                         </div>
                         <span className={`hidden lg:inline-flex w-fit rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${event.severity === "ERROR" ? "bg-red-100 text-red-700" : event.severity === "WARN" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
                           {event.severity}
                         </span>
-                        <p className="hidden lg:block text-xs font-semibold text-zinc-700">{event.type}</p>
+                        <p className="hidden lg:block text-xs font-semibold text-zinc-700">{formatEventTypeLabel(event.type)}</p>
                         <p className="truncate text-xs text-zinc-600">{event.actor?.email ?? "Sistema"}</p>
                         <p className="text-xs text-zinc-500">{event.statusCode ?? "Status não disponível"}</p>
                         <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2">
