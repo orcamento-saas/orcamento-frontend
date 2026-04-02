@@ -277,7 +277,7 @@ export default function PublicBudgetPage() {
           </Card>
         )}
 
-        <p className="mt-2 text-center">
+        <p className="mt-2 text-center sm:hidden">
           <Button size="sm" onClick={() => window.close()} className="bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 shadow-sm">
             Fechar
           </Button>

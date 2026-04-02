@@ -234,7 +234,15 @@ export default function DashboardLayout({
                 className="h-8 w-auto max-w-[180px] object-contain"
               />
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
+              {plan !== "PRO" && (
+                <Link
+                  href="/plans"
+                  className="rounded-full bg-white/20 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-white ring-1 ring-white/25 hover:bg-white/30 sm:px-2.5 sm:text-[10px] sm:tracking-[0.15em]"
+                >
+                  Assinar Pro
+                </Link>
+              )}
               <NotificationButton unseenCount={unseenCount} onClick={handleOpenNotifications} animate={bellAnimate} />
               <button
                 type="button"
@@ -308,9 +316,19 @@ export default function DashboardLayout({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-medium text-white/90">{userDisplayName}</p>
-                      <p className="mt-1 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
-                        Plano {planLabel}
-                      </p>
+                      {plan === "PRO" ? (
+                        <p className="mt-1 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
+                          Plano Pro
+                        </p>
+                      ) : (
+                        <Link
+                          href="/plans"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="mt-1 inline-flex rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-teal-700 hover:bg-white/90"
+                        >
+                          Assinar Pro
+                        </Link>
+                      )}
                     </div>
                   </button>
                   <MobileLogoutButton
@@ -329,9 +347,18 @@ export default function DashboardLayout({
               className="h-[148px] w-[148px] shrink-0 object-contain"
             />
             <div className="flex items-center justify-end gap-3">
-              <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${plan === "PRO" ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-700"}`}>
-                Plano {planLabel}
-              </span>
+              {plan === "PRO" ? (
+                <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-800">
+                  Plano Pro
+                </span>
+              ) : (
+                <Link
+                  href="/plans"
+                  className="inline-flex items-center rounded-full bg-teal-600 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-teal-700"
+                >
+                  Assinar Pro
+                </Link>
+              )}
               <p className="text-sm font-medium text-zinc-700">
                 Bem-vindo, <span className="text-zinc-900">{userDisplayName}</span>
               </p>

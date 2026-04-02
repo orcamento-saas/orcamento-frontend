@@ -6,8 +6,8 @@ import { BudgetScheduleModal } from "@/components/BudgetScheduleModal";
 import type { BudgetScheduleTarget } from "@/components/BudgetScheduleModal";
 import { ShareBudget } from "@/components/ShareBudget";
 import { useAuth } from "@/hooks/useAuth";
-import { getBudgets, updateBudgetExecuted } from "@/services/budgets";
-import type { Budget } from "@/types/budget";
+import { getBudgetCards, updateBudgetExecuted } from "@/services/budgets";
+import type { BudgetCard } from "@/types/budget";
 import type { ApiError } from "@/lib/api";
 
 type RangePreset = "today" | "tomorrow" | "next7" | "custom";
@@ -74,37 +74,31 @@ function formatCurrency(value: number): string {
 }
 
 function formatScheduleDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  const d = new Date(iso);
+  const datePart = d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+  });
+  const timePart = d.toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
   });
+  return `${datePart} - ${timePart}`;
 }
 
-function formatDateShort(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR", {
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  const datePart = d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
-}
-
-function getDisplayDate(budget: Budget): string {
-  if (budget.documentDate) {
-    const dateStr = budget.documentDate;
-    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (!match) return formatDateShort(budget.createdAt);
-    const [, y, m, d] = match;
-    const date = new Date(Number(y), Number(m) - 1, Number(d));
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  }
-  return formatDateShort(budget.createdAt);
+  const timePart = d.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${datePart} - ${timePart}`;
 }
 
 const WEEKDAYS_PT = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
@@ -198,7 +192,7 @@ const IconCompartilhar = () => (
 
 export default function AgendadosPage() {
   const { accessToken } = useAuth();
-  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [budgets, setBudgets] = useState<BudgetCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingExecutedId, setUpdatingExecutedId] = useState<string | null>(null);
@@ -254,7 +248,8 @@ export default function AgendadosPage() {
         prev.map((b) =>
           b.id === id
             ? {
-                ...updated,
+                ...b,
+                executed: updated.executed,
                 executedAt: updated.executedAt ?? null,
               }
             : b
@@ -286,12 +281,12 @@ export default function AgendadosPage() {
       setLoading(true);
       setError(null);
       try {
-        const all: Budget[] = [];
+        const all: BudgetCard[] = [];
         let page = 1;
         const limit = 100;
 
         while (true) {
-          const res = await getBudgets(accessToken, { page, limit });
+          const res = await getBudgetCards(accessToken, { page, limit });
           all.push(...res.data);
           if (res.data.length < limit) break;
           page += 1;
@@ -715,13 +710,13 @@ export default function AgendadosPage() {
                                 <>
                                   <p className="text-xs font-semibold sm:hidden">
                                     <span className="text-zinc-500">Criação </span>
-                                    <span className="text-emerald-700">{getDisplayDate(b)}</span>
+                                    <span className="text-emerald-700">{formatDateTime(b.createdAt)}</span>
                                   </p>
                                   <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">
                                     Criação
                                   </p>
                                   <p className="hidden text-xs font-semibold text-emerald-700 sm:block sm:text-sm">
-                                    {getDisplayDate(b)}
+                                    {formatDateTime(b.createdAt)}
                                   </p>
                                 </>
                               ) : (
@@ -740,7 +735,20 @@ export default function AgendadosPage() {
                               )}
                             </div>
                             <div className="rounded-md bg-white/80 px-3 py-2">
-                              {b.signedPdfUrl ? (
+                              {b.signedAt ? (
+                                <>
+                                  <p className="text-xs font-semibold sm:hidden">
+                                    <span className="text-zinc-500">Assinatura </span>
+                                    <span className="text-emerald-700">{formatDateTime(b.signedAt)}</span>
+                                  </p>
+                                  <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">
+                                    Assinatura
+                                  </p>
+                                  <p className="hidden text-xs font-semibold text-emerald-700 sm:block sm:text-sm">
+                                    {formatDateTime(b.signedAt)}
+                                  </p>
+                                </>
+                              ) : b.signedPdfUrl ? (
                                 <>
                                   <p className="text-xs font-semibold sm:hidden">
                                     <span className="text-zinc-500">Assinatura </span>
@@ -803,14 +811,14 @@ export default function AgendadosPage() {
                                   <p className="text-xs font-semibold sm:hidden">
                                     <span className="text-zinc-500">Conclusão </span>
                                     <span className="text-emerald-700">
-                                      {b.executedAt ? formatDateShort(b.executedAt) : "Concluído"}
+                                      {b.executedAt ? formatDateTime(b.executedAt) : "Concluído"}
                                     </span>
                                   </p>
                                   <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:block">
                                     Conclusão
                                   </p>
                                   <p className="hidden text-xs font-semibold text-emerald-700 sm:block sm:text-sm">
-                                    {b.executedAt ? formatDateShort(b.executedAt) : "Concluído"}
+                                    {b.executedAt ? formatDateTime(b.executedAt) : "Concluído"}
                                   </p>
                                 </>
                               ) : (
@@ -845,7 +853,25 @@ export default function AgendadosPage() {
         accessToken={accessToken}
         onClose={() => setScheduleTarget(null)}
         onSaved={(updated) => {
-          setBudgets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+          setBudgets((prev) =>
+            prev.map((x) =>
+              x.id === updated.id
+                ? {
+                    ...x,
+                    title: updated.title,
+                    value: updated.value,
+                    status: updated.status,
+                    executed: updated.executed,
+                    executedAt: updated.executedAt ?? null,
+                    pdfUrl: updated.pdfUrl,
+                    signedPdfUrl: updated.signedPdfUrl,
+                    documentDate: updated.documentDate ?? null,
+                    clientName: updated.clientName ?? null,
+                    serviceScheduledAt: updated.serviceScheduledAt ?? null,
+                  }
+                : x
+            )
+          );
         }}
       />
 

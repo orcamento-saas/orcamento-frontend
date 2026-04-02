@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { createBillingCheckout, type BillingMethod } from "@/services/billing";
 import {
   createBudget,
   generatePdf,
@@ -368,6 +369,8 @@ export default function CreateBudgetPage() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'form' | 'preview'>('form');
   const [showFreeUpgradeModal, setShowFreeUpgradeModal] = useState(false);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [checkoutMethod, setCheckoutMethod] = useState<BillingMethod>("CREDIT_CARD");
   const [freeUpgradeModalReason, setFreeUpgradeModalReason] = useState<
     "premium-template" | "creation-limit" | null
   >(null);
@@ -764,6 +767,25 @@ export default function CreateBudgetPage() {
   function handleFreeUpgradeAcknowledge(): void {
     setShowFreeUpgradeModal(false);
     setFreeUpgradeModalReason(null);
+  }
+
+  async function handleUpgradeToPro(): Promise<void> {
+    if (!accessToken) {
+      setError("Sessão expirada. Faça login novamente.");
+      setShowFreeUpgradeModal(false);
+      setFreeUpgradeModalReason(null);
+      router.push("/login");
+      return;
+    }
+
+    setUpgradeLoading(true);
+    try {
+      const checkout = await createBillingCheckout(accessToken, [checkoutMethod]);
+      window.location.href = checkout.checkoutUrl;
+    } catch {
+      setError("Não foi possível iniciar o checkout do plano Pro.");
+      setUpgradeLoading(false);
+    }
   }
 
   if (pageLoading) {
@@ -1731,10 +1753,57 @@ export default function CreateBudgetPage() {
             : "Você já utilizou o limite de criação do plano Free. Com o plano Pro, você libera criação ilimitada de orçamentos e acesso completo aos templates premium."}
         </p>
         <p className="text-sm font-medium text-zinc-700">
-          Fale com o administrador para ativar seu plano Pro e continuar criando sem bloqueios.
+          Faça upgrade para o plano Pro e continue sem bloqueios.
         </p>
-        <div className="flex justify-end">
-          <Button onClick={handleFreeUpgradeAcknowledge}>Entendi</Button>
+        <div>
+          <p className="mb-2 text-sm font-medium text-zinc-700">Forma de pagamento</p>
+          <div className="flex flex-wrap gap-2">
+            <label
+              className={`flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium ${
+                checkoutMethod === "CREDIT_CARD"
+                  ? "border-emerald-600 bg-emerald-50 text-emerald-800"
+                  : "border-zinc-200 bg-white text-zinc-700"
+              }`}
+            >
+              <input
+                type="radio"
+                name="checkout-method-create-budget"
+                className="h-4 w-4 shrink-0 border-zinc-300 accent-emerald-600 focus:ring-emerald-500"
+                checked={checkoutMethod === "CREDIT_CARD"}
+                onChange={() => setCheckoutMethod("CREDIT_CARD")}
+              />
+              Cartão
+            </label>
+            <label
+              className={`flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium ${
+                checkoutMethod === "PIX"
+                  ? "border-emerald-600 bg-emerald-50 text-emerald-800"
+                  : "border-zinc-200 bg-white text-zinc-700"
+              }`}
+            >
+              <input
+                type="radio"
+                name="checkout-method-create-budget"
+                className="h-4 w-4 shrink-0 border-zinc-300 accent-emerald-600 focus:ring-emerald-500"
+                checked={checkoutMethod === "PIX"}
+                onChange={() => setCheckoutMethod("PIX")}
+              />
+              PIX
+            </label>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button onClick={handleFreeUpgradeAcknowledge} disabled={upgradeLoading}>
+            Agora não
+          </Button>
+          <Button
+            onClick={() => {
+              void handleUpgradeToPro();
+            }}
+            isLoading={upgradeLoading}
+          >
+            Assinar Pro
+          </Button>
         </div>
       </div>
     </Modal>

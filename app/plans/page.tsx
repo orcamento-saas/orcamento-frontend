@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { createBillingCheckout, type BillingMethod } from "@/services/billing";
+import type { ApiError } from "@/lib/api";
 
 type PlansLeftFeature = {
   imageSrc: string;
@@ -44,6 +48,11 @@ const plansLeftFeatures: PlansLeftFeature[] = [
 
 export default function PlansPage() {
   const [visibleIndex, setVisibleIndex] = useState(-1);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [checkoutMethod, setCheckoutMethod] = useState<BillingMethod>("CREDIT_CARD");
+  const router = useRouter();
+  const { accessToken } = useAuth();
 
   useEffect(() => {
     const revealMs = 900;
@@ -70,6 +79,25 @@ export default function PlansPage() {
       if (timer != null) window.clearTimeout(timer);
     };
   }, []);
+
+  async function handleUpgradeClick(): Promise<void> {
+    setUpgradeError(null);
+
+    if (!accessToken) {
+      router.push("/login");
+      return;
+    }
+
+    setUpgradeLoading(true);
+    try {
+      const result = await createBillingCheckout(accessToken, [checkoutMethod]);
+      window.location.href = result.checkoutUrl;
+    } catch (err) {
+      const apiErr = err as ApiError;
+      setUpgradeError(apiErr.message ?? "Não foi possível iniciar o checkout.");
+      setUpgradeLoading(false);
+    }
+  }
 
   return (
     <div className="flex h-[100svh] flex-col bg-gray-50 overflow-hidden lg:h-screen lg:flex-row">
@@ -109,7 +137,7 @@ export default function PlansPage() {
       {/* Lado direito: cards de planos + comparação */}
       <div className="flex w-full flex-col justify-center px-5 pt-1 pb-8 sm:px-8 sm:py-8 lg:w-1/2 lg:px-12 lg:py-12">
         <div className="mx-auto w-full max-w-3xl">
-          <div className="mb-2 md:mb-8 text-center">
+          <div className="mb-1 text-center sm:mb-2 md:mb-3">
             <img
               src="/plan/logo.png"
               alt="Logo"
@@ -118,9 +146,8 @@ export default function PlansPage() {
             <img
               src="/plan/logo.png"
               alt="Logo"
-              className="mx-auto mb-0 hidden h-[280px] w-[280px] object-contain lg:block lg:-mt-14 lg:-mb-20"
+              className="mx-auto mb-0 hidden h-[280px] w-[280px] object-contain lg:block lg:-mt-14 lg:-mb-24"
             />
-            
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -209,7 +236,7 @@ export default function PlansPage() {
                   </p>
                 </div>
                 <span className="inline-flex items-center rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
-                  R$ 29 / mês
+                  R$ 19,90 / mês
                 </span>
               </div>
 
@@ -260,12 +287,56 @@ export default function PlansPage() {
               </ul>
 
               <div className="mt-auto">
-                <Link
-                  href="/login"
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+                <div className="mb-3">
+                  <p className="mb-2 text-xs font-medium text-zinc-700">Forma de pagamento</p>
+                  <div className="flex flex-wrap gap-2">
+                    <label
+                      className={`flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg border px-2 py-2 text-xs font-medium ${
+                        checkoutMethod === "CREDIT_CARD"
+                          ? "border-emerald-600 bg-emerald-50 text-emerald-800"
+                          : "border-zinc-200 bg-white text-zinc-700"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="checkout-method-plans"
+                        className="h-4 w-4 shrink-0 border-zinc-300 accent-emerald-600 focus:ring-emerald-500"
+                        checked={checkoutMethod === "CREDIT_CARD"}
+                        onChange={() => setCheckoutMethod("CREDIT_CARD")}
+                      />
+                      Cartão
+                    </label>
+                    <label
+                      className={`flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg border px-2 py-2 text-xs font-medium ${
+                        checkoutMethod === "PIX"
+                          ? "border-emerald-600 bg-emerald-50 text-emerald-800"
+                          : "border-zinc-200 bg-white text-zinc-700"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="checkout-method-plans"
+                        className="h-4 w-4 shrink-0 border-zinc-300 accent-emerald-600 focus:ring-emerald-500"
+                        checked={checkoutMethod === "PIX"}
+                        onChange={() => setCheckoutMethod("PIX")}
+                      />
+                      PIX
+                    </label>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={upgradeLoading}
+                  onClick={() => {
+                    void handleUpgradeClick();
+                  }}
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  Quero plano Pro
-                </Link>
+                  {upgradeLoading ? "Iniciando checkout..." : "Quero plano Pro"}
+                </button>
+                {upgradeError ? (
+                  <p className="mt-2 text-xs text-red-600">{upgradeError}</p>
+                ) : null}
               </div>
             </div>
           </div>
