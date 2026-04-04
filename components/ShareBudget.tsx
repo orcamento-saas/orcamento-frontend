@@ -29,7 +29,7 @@ export function ShareBudget({ budgetId, onClose }: ShareBudgetProps) {
     `Confira seu orçamento: ${url}`
   )}`;
 
-  const mailtoUrl = `mailto:?subject=Orçamento LM&body=${encodeURIComponent(
+  const mailtoUrl = `mailto:?subject=Orçamentos LM&body=${encodeURIComponent(
     `Confira seu orçamento pelo link: ${url}`
   )}`;
 

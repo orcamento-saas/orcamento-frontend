@@ -6,19 +6,19 @@ const CNPJ = "61.566.513/0001-59";
 const EMPRESA_LEGAL = `${RAZAO_SOCIAL}, CNPJ ${CNPJ}`;
 
 export const metadata: Metadata = {
-  title: "Termos de uso – Orçamento LM",
-  description: "Termos de uso da plataforma Orçamento LM.",
+  title: "Termos de uso – Orçamentos LM",
+  description: "Termos de uso da plataforma Orçamentos LM.",
 };
 
 export default function TermosDeUsoPage() {
   return (
-    <LegalPublicLayout title="Termos de Uso – Orçamento LM">
+    <LegalPublicLayout title="Termos de Uso – Orçamentos LM">
       <p className="!mt-0 text-sm text-zinc-500">
         Última atualização: 24 de março de 2026
       </p>
 
       <p className="mt-6">
-        Estes Termos de Uso regulam o acesso e utilização da plataforma Orçamento LM, disponibilizada por{" "}
+        Estes Termos de Uso regulam o acesso e utilização da plataforma Orçamentos LM, disponibilizada por{" "}
         {EMPRESA_LEGAL}, em conformidade com a legislação vigente, incluindo a Lei Geral de Proteção de
         Dados (LGPD).
       </p>
@@ -29,7 +29,7 @@ export default function TermosDeUsoPage() {
 
       <h2 className="mt-10">1. Objeto da Plataforma</h2>
       <p>
-        O Orçamento LM é uma plataforma SaaS que permite aos usuários criar, gerenciar e compartilhar
+        Orçamentos LM é uma plataforma SaaS que permite aos usuários criar, gerenciar e compartilhar
         orçamentos online, podendo incluir dados de seus próprios clientes.
       </p>
 
@@ -57,7 +57,7 @@ export default function TermosDeUsoPage() {
         A plataforma permite que o usuário insira dados de seus próprios clientes para geração de
         orçamentos. O usuário é integralmente responsável por esses dados, incluindo sua coleta, uso e
         compartilhamento, devendo garantir que possui base legal para tal, conforme a legislação aplicável.
-        O Orçamento LM não se responsabiliza por dados inseridos pelos usuários.
+        Orçamentos LM não se responsabiliza por dados inseridos pelos usuários.
       </p>
 
       <h2 className="mt-8">5. Planos e Limitações</h2>
@@ -70,19 +70,19 @@ export default function TermosDeUsoPage() {
       <h2 className="mt-8">6. Pagamentos</h2>
       <p>
         Nos planos pagos, os pagamentos serão processados por plataformas terceiras especializadas. O
-        Orçamento LM não armazena dados completos de cartões de crédito. O acesso aos recursos pagos poderá
+        Orçamentos LM não armazena dados completos de cartões de crédito. O acesso aos recursos pagos poderá
         ser suspenso em caso de inadimplência.
       </p>
 
       <h2 className="mt-8">7. Disponibilidade do Serviço</h2>
       <p>
-        O Orçamento LM se esforça para manter a plataforma disponível continuamente, porém não garante
+        Orçamentos LM se esforça para manter a plataforma disponível continuamente, porém não garante
         funcionamento ininterrupto ou livre de erros, podendo ocorrer interrupções para manutenção,
         atualizações ou por fatores externos.
       </p>
 
       <h2 className="mt-8">8. Limitação de Responsabilidade</h2>
-      <p>O Orçamento LM não se responsabiliza por:</p>
+      <p>Orçamentos LM não se responsabiliza por:</p>
       <ul className="mt-3 list-disc space-y-2 pl-5">
         <li>Decisões tomadas com base nos orçamentos gerados</li>
         <li>Erros decorrentes de informações inseridas pelos usuários</li>
@@ -93,13 +93,13 @@ export default function TermosDeUsoPage() {
       <h2 className="mt-8">9. Propriedade Intelectual</h2>
       <p>
         Todos os direitos relacionados à plataforma, incluindo software, design e funcionalidades, pertencem
-        ao Orçamento LM. O usuário não está autorizado a copiar, modificar ou explorar comercialmente a
+        à plataforma Orçamentos LM. O usuário não está autorizado a copiar, modificar ou explorar comercialmente a
         plataforma sem autorização.
       </p>
 
       <h2 className="mt-8">10. Suspensão e Cancelamento</h2>
       <p>
-        O Orçamento LM poderá suspender ou cancelar contas que violem estes Termos, sem aviso prévio. O
+        Orçamentos LM poderá suspender ou cancelar contas que violem estes Termos, sem aviso prévio. O
         usuário pode cancelar sua conta a qualquer momento.
       </p>
 
@@ -131,7 +131,7 @@ export default function TermosDeUsoPage() {
       </p>
 
       <p className="mt-10 border-t border-zinc-200 pt-8">
-        Ao utilizar o Orçamento LM, o usuário declara estar ciente e de acordo com estes Termos de Uso.
+        Ao utilizar a plataforma Orçamentos LM, o usuário declara estar ciente e de acordo com estes Termos de Uso.
       </p>
     </LegalPublicLayout>
   );

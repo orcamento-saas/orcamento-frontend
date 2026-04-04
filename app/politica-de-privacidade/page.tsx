@@ -5,19 +5,19 @@ const RAZAO_SOCIAL = "61.566.513 LUIZ MARCELO LOVATO MOTA";
 const CNPJ = "61.566.513/0001-59";
 
 export const metadata: Metadata = {
-  title: "Política de privacidade – Orçamento LM",
-  description: "Política de privacidade da plataforma Orçamento LM.",
+  title: "Política de privacidade – Orçamentos LM",
+  description: "Política de privacidade da plataforma Orçamentos LM.",
 };
 
 export default function PoliticaPrivacidadePage() {
   return (
-    <LegalPublicLayout title="Política de Privacidade – Orçamento LM">
+    <LegalPublicLayout title="Política de Privacidade – Orçamentos LM">
       <p className="!mt-0 text-sm text-zinc-500">
         Última atualização: 24 de março de 2026
       </p>
 
       <p className="mt-6">
-        A presente Política de Privacidade descreve como a plataforma Orçamento LM coleta, utiliza,
+        A presente Política de Privacidade descreve como a plataforma Orçamentos LM coleta, utiliza,
         armazena e protege os dados pessoais dos usuários, em conformidade com a legislação vigente,
         especialmente a Lei Geral de Proteção de Dados (LGPD).
       </p>
@@ -40,8 +40,9 @@ export default function PoliticaPrivacidadePage() {
       <h2 className="mt-8">3. Dados de Terceiros Inseridos pelos Usuários</h2>
       <p>
         A plataforma permite que usuários cadastrem informações de seus próprios clientes para geração de
-        orçamentos. Nesses casos, o usuário é o responsável pelos dados inseridos, enquanto o Orçamento LM
-        atua como operador desses dados, apenas armazenando e processando conforme instruções do usuário.
+        orçamentos. Nesses casos, o usuário é o responsável pelos dados inseridos, enquanto a plataforma
+        Orçamentos LM atua como operador desses dados, apenas armazenando e processando conforme instruções do
+        usuário.
         O usuário declara que possui autorização para utilizar esses dados conforme a legislação
         aplicável.
       </p>
@@ -113,7 +114,7 @@ export default function PoliticaPrivacidadePage() {
       </p>
 
       <p className="mt-10 border-t border-zinc-200 pt-8">
-        Ao utilizar a plataforma Orçamento LM, o usuário declara estar ciente e de acordo com esta Política
+        Ao utilizar a plataforma Orçamentos LM, o usuário declara estar ciente e de acordo com esta Política
         de Privacidade.
       </p>
     </LegalPublicLayout>

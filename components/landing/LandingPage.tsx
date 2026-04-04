@@ -172,7 +172,7 @@ export function LandingPage() {
             <span className="relative h-9 w-[120px] shrink-0 sm:h-10 sm:w-[140px]">
               <Image
                 src="/plan/logo.png"
-                alt="Orçamento LM"
+                alt="Orçamentos LM"
                 fill
                 className="object-contain object-left"
                 sizes="140px"
@@ -547,7 +547,7 @@ export function LandingPage() {
 
       <footer className="border-t border-zinc-200 bg-white py-8">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 px-4 text-center text-xs text-zinc-500 sm:flex-row sm:px-5 sm:text-left md:px-8 lg:px-10 xl:px-12">
-          <p>© 2026 Orçamento LM</p>
+          <p>© 2026 Orçamentos LM</p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link href="/politica-de-privacidade" className="hover:text-teal-700">
               Privacidade

@@ -77,12 +77,16 @@ export function AuthLoginPage() {
     [router, nextDest]
   );
 
-  /** Já autenticado e veio com destino: vai direto (ex.: /plans). */
+  /**
+   * Já autenticado e veio com destino: pula o formulário (ex.: /dashboard).
+   * Não redireciona para `/plans`: é página pública; voltar para ela parece que o login “não abriu”.
+   */
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       const { data } = await supabase.auth.getSession();
       if (cancelled || !data.session?.user || !nextDest) return;
+      if (nextDest === "/plans") return;
       router.replace(nextDest);
       router.refresh();
     })();

@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Orçamento LM",
+  title: "Orçamentos LM",
   description: "Orçamentos profissionais com PDF e assinatura digital",
 };
 
