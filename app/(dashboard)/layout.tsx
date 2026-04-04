@@ -34,6 +34,7 @@ export default function DashboardLayout({
   const { isNavigating, pendingHref, navigateWithSkeleton } = useSkeletonNavigation();
   const { user, session, loading, accessToken, account, isAdmin, plan, isSuspended, signOut } = useAuth();
   const pathname = usePathname();
+  const isAccountPage = pathname === "/account";
 
   const userDisplayName =
     account?.name ||
@@ -376,7 +377,11 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 py-0 lg:py-6 sm:px-6">
+          <main
+            className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 sm:px-6 ${
+              isAccountPage ? "py-2 lg:py-3" : "py-0 lg:py-6"
+            }`}
+          >
             {renderSkeletonForRoute()}
           </main>
         </div>

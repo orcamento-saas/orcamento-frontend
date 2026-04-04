@@ -130,8 +130,8 @@ export default function AccountPage() {
   }
 
   const inputClass =
-    "mt-0.5 w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 sm:py-2";
-  const labelClass = "block text-[11px] font-medium text-zinc-600 sm:text-xs md:text-sm";
+    "mt-0.5 w-full rounded-lg border border-zinc-300 px-2.5 py-1.5 text-sm text-zinc-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 sm:px-3 sm:py-2";
+  const labelClass = "block text-[10px] font-medium text-zinc-600 sm:text-xs md:text-sm";
   const isPro = (billing?.plan ?? account?.plan) === "PRO";
   const subscriptionStatus = billing?.subscription?.status;
   const isSubscriptionCanceled = subscriptionStatus === "CANCELED";
@@ -140,24 +140,36 @@ export default function AccountPage() {
     isPro &&
     Boolean(billing?.subscription) &&
     subscriptionStatus !== "CANCELED";
-  const periodEnd =
+  /** Fim do acesso Pro (cancelamento, avisos): mantém fallback em paidUntil se o backend só preencheu um dos campos. */
+  const accessEnd =
     billing?.subscription?.currentPeriodEnd ??
     billing?.subscription?.paidUntil ??
     null;
-  const periodEndTime = periodEnd ? new Date(periodEnd).getTime() : NaN;
-  const hasFuturePeriodEnd =
-    Number.isFinite(periodEndTime) && periodEndTime > Date.now();
+  const accessEndTime = accessEnd ? new Date(accessEnd).getTime() : NaN;
+  const hasFutureAccessEnd =
+    Number.isFinite(accessEndTime) && accessEndTime > Date.now();
+  /** Linha de vigência na UI: só currentPeriodEnd (evita confundir com vencimento curto do Asaas no PIX). */
+  const currentPeriodEndOnly = billing?.subscription?.currentPeriodEnd ?? null;
   /** Pro ainda válido após pedir cancelamento — não mostrar só "Cancelada" (conflita com o plano). */
   const canceledButProUntilEnd =
-    isSubscriptionCanceled && isPro && hasFuturePeriodEnd;
+    isSubscriptionCanceled && isPro && hasFutureAccessEnd;
   const statusLabel = canceledButProUntilEnd
-    ? `Pro ativo até ${formatDateBr(periodEnd)} — renovação cancelada, sem nova cobrança.`
+    ? `Pro ativo até ${formatDateBr(accessEnd)} — renovação cancelada, sem nova cobrança.`
     : `Status: ${formatSubscriptionStatus(
         resolvedSubscriptionStatusForDisplay(billing)
       )}`;
   const billingWindowLabel = canceledButProUntilEnd
     ? null
-    : `Renovação / vigência: até ${formatDateBr(periodEnd)}.`;
+    : currentPeriodEndOnly
+      ? `Vigência do plano Pro até ${formatDateBr(currentPeriodEndOnly)}.`
+      : "Data de vigência em sincronização; aguarde alguns minutos ou atualize a página.";
+  const billingMethod = billing?.subscription?.billingMethod;
+  const showPixVigencyNote =
+    isPro &&
+    !loadingBilling &&
+    !canceledButProUntilEnd &&
+    billingMethod === "PIX" &&
+    Boolean(currentPeriodEndOnly);
 
   async function handleUpgradeToPro() {
     if (!accessToken) {
@@ -213,13 +225,13 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-lg pb-3 pt-1 sm:pb-4 sm:pt-2">
-      <div className="mb-2">
-        <h1 className="text-base font-bold text-zinc-900 sm:text-lg">Minha conta</h1>
+    <div className="mx-auto w-full max-w-lg pb-2 pt-0 sm:pb-3 sm:pt-1">
+      <div className="mb-1 sm:mb-1.5">
+        <h1 className="text-sm font-bold text-zinc-900 sm:text-base lg:text-lg">Minha conta</h1>
       </div>
 
-      <Card className="p-4 shadow-sm sm:p-4">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 sm:gap-3">
+      <Card className="p-3 shadow-sm sm:p-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:gap-2.5">
           <div>
             <label htmlFor="acc-email" className={labelClass}>
               E-mail
@@ -229,7 +241,7 @@ export default function AccountPage() {
               type="email"
               value={account?.email ?? ""}
               disabled
-              className="mt-0.5 w-full cursor-not-allowed rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-600"
+              className="mt-0.5 w-full cursor-not-allowed rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-sm text-zinc-600 sm:px-3"
             />
           </div>
 
@@ -268,11 +280,11 @@ export default function AccountPage() {
           </div>
 
           {err && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs text-red-700 sm:text-sm">
+            <div className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-700 sm:px-2.5 sm:py-1.5 sm:text-sm">
               {err}
             </div>
           )}
-          <div className="pt-0.5">
+          <div className="pt-0">
             <Button type="submit" variant="success" size="sm" isLoading={saving} className="w-full">
               Salvar dados
             </Button>
@@ -280,16 +292,16 @@ export default function AccountPage() {
         </form>
       </Card>
 
-      <Card className="mt-3 p-4 shadow-sm sm:p-4">
+      <Card className="mt-2 p-3 shadow-sm sm:mt-3 sm:p-4">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h2 className="text-sm font-semibold text-zinc-900 sm:text-base">Assinatura</h2>
-            <p className="mt-0.5 text-xs text-zinc-600 sm:text-sm">
+            <h2 className="text-xs font-semibold text-zinc-900 sm:text-sm md:text-base">Assinatura</h2>
+            <p className="mt-0 text-[11px] text-zinc-600 sm:mt-0.5 sm:text-xs sm:text-sm">
               Plano atual: <span className="font-semibold">{isPro ? "Pro" : "Free"}</span>
             </p>
           </div>
           <span
-            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] ${
+            className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] sm:px-2.5 sm:py-1 sm:text-xs sm:tracking-[0.12em] ${
               isPro ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-700"
             }`}
           >
@@ -298,26 +310,31 @@ export default function AccountPage() {
         </div>
 
         {loadingBilling ? (
-          <p className="mt-2 text-xs text-zinc-500 sm:text-sm">Carregando assinatura...</p>
+          <p className="mt-1.5 text-[11px] text-zinc-500 sm:mt-2 sm:text-sm">Carregando assinatura...</p>
         ) : isPro ? (
-          <div className="mt-2 space-y-0.5 text-xs text-zinc-700 sm:text-sm">
-            <p>Forma de pagamento: {formatBillingMethod(billing?.subscription?.billingMethod)}</p>
+          <div className="mt-1.5 space-y-0 text-[11px] leading-snug text-zinc-700 sm:mt-2 sm:space-y-0.5 sm:text-sm">
+            <p>Forma de pagamento: {formatBillingMethod(billingMethod)}</p>
             <p>{statusLabel}</p>
             {billingWindowLabel ? <p>{billingWindowLabel}</p> : null}
+            {showPixVigencyNote ? (
+              <p className="mt-1 rounded-lg border border-teal-100 bg-teal-50/80 px-2 py-1.5 text-[10px] leading-snug text-teal-900 sm:text-[11px] sm:text-xs">
+                No PIX, cada período é cobrado à parte. A data acima é o fim da vigência atual do plano Pro.
+              </p>
+            ) : null}
           </div>
         ) : (
-          <p className="mt-2 text-xs text-zinc-600 sm:text-sm">
+          <p className="mt-1.5 text-[11px] text-zinc-600 sm:mt-2 sm:text-sm">
             Você não tem assinatura paga ativa no momento.
           </p>
         )}
 
         {billingErr && (
-          <div className="mt-2 rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs text-red-700 sm:text-sm">
+          <div className="mt-1.5 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-700 sm:mt-2 sm:px-2.5 sm:py-1.5 sm:text-sm">
             {billingErr}
           </div>
         )}
 
-        <div className="mt-3">
+        <div className="mt-2 sm:mt-2.5">
           {isPro && canRequestCancelPro && (
             <Button
               type="button"
@@ -331,24 +348,24 @@ export default function AccountPage() {
             </Button>
           )}
           {isPro && isSubscriptionCanceled && (
-            <p className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs leading-snug text-amber-900 sm:text-sm">
-              {canceledButProUntilEnd && periodEnd
-                ? `Sem renovação automática. Após ${formatDateBr(periodEnd)}, a conta volta ao plano Free.`
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] leading-snug text-amber-900 sm:px-2.5 sm:py-2 sm:text-xs sm:text-sm">
+              {canceledButProUntilEnd && accessEnd
+                ? `Sem renovação automática. Após ${formatDateBr(accessEnd)}, a conta volta ao plano Free.`
                 : "Sua assinatura foi encerrada no provedor de pagamento. Os detalhes do período podem estar sincronizando."}
             </p>
           )}
           {isPro && !canRequestCancelPro && !isSubscriptionCanceled && !loadingBilling && (
-            <p className="text-sm text-zinc-500">
+            <p className="text-xs text-zinc-500 sm:text-sm">
               Não encontramos uma assinatura ativa para cancelar. Se você usa o Pro, os detalhes
               podem estar sincronizando; tente atualizar a página em instantes.
             </p>
           )}
           {!isPro && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-zinc-700 sm:text-sm">Forma de pagamento</p>
-              <div className="flex flex-wrap gap-2">
+            <div className="space-y-1.5 sm:space-y-2">
+              <p className="text-[11px] font-medium text-zinc-700 sm:text-sm">Forma de pagamento</p>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 <label
-                  className={`flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium sm:text-sm ${
+                  className={`flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium sm:gap-2 sm:px-3 sm:py-2 sm:text-sm ${
                     checkoutMethod === "CREDIT_CARD"
                       ? "border-emerald-600 bg-emerald-50 text-emerald-800"
                       : "border-zinc-200 bg-white text-zinc-700"
@@ -364,7 +381,7 @@ export default function AccountPage() {
                   Cartão
                 </label>
                 <label
-                  className={`flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium sm:text-sm ${
+                  className={`flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium sm:gap-2 sm:px-3 sm:py-2 sm:text-sm ${
                     checkoutMethod === "PIX"
                       ? "border-emerald-600 bg-emerald-50 text-emerald-800"
                       : "border-zinc-200 bg-white text-zinc-700"
