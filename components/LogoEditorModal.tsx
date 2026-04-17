@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 
-// Mantemos a exibição em ~96px no layout, mas exportamos maior para evitar borrado.
-const LOGO_EXPORT_SIZE = 512;
+// A logo no PDF usa área retangular (2:1); exportamos maior para evitar borrado.
+const LOGO_EXPORT_WIDTH = 1024;
+const LOGO_EXPORT_HEIGHT = 512;
+const CROP_WIDTH = 560;
+const CROP_HEIGHT = 280;
+const CROP_MIN_WIDTH = 220;
+const CROP_MIN_HEIGHT = 110;
 
 export interface LogoEditorModalProps {
   isOpen: boolean;
@@ -33,15 +38,16 @@ function createImage(url: string): Promise<HTMLImageElement> {
 async function getCroppedImg(
   imageSrc: string,
   pixelCrop: Area,
-  outputSize: number = LOGO_EXPORT_SIZE
+  outputWidth: number = LOGO_EXPORT_WIDTH,
+  outputHeight: number = LOGO_EXPORT_HEIGHT
 ): Promise<string> {
   const image = await createImage(imageSrc);
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2d não disponível");
 
-  canvas.width = outputSize;
-  canvas.height = outputSize;
+  canvas.width = outputWidth;
+  canvas.height = outputHeight;
 
   // Forca interpolacao de alta qualidade no downscale/upscale.
   ctx.imageSmoothingEnabled = true;
@@ -55,8 +61,8 @@ async function getCroppedImg(
     pixelCrop.height,
     0,
     0,
-    outputSize,
-    outputSize
+    outputWidth,
+    outputHeight
   );
 
   return canvas.toDataURL("image/png");
@@ -70,8 +76,50 @@ export function LogoEditorModal({
 }: LogoEditorModalProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [minZoom, setMinZoom] = useState(0.2);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [cropSize, setCropSize] = useState({ width: CROP_WIDTH, height: CROP_HEIGHT });
   const [confirming, setConfirming] = useState(false);
+  const cropContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setMinZoom(0.2);
+    setCroppedAreaPixels(null);
+    setCropSize({ width: CROP_WIDTH, height: CROP_HEIGHT });
+  }, [isOpen, imageDataUrl]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updateCropSize = () => {
+      const container = cropContainerRef.current;
+      if (!container) return;
+
+      // Reserva bordas/folga interna para garantir que o retângulo apareça inteiro.
+      const availableWidth = Math.max(CROP_MIN_WIDTH, container.clientWidth - 28);
+      const availableHeight = Math.max(CROP_MIN_HEIGHT, container.clientHeight - 28);
+
+      let width = Math.min(CROP_WIDTH, availableWidth);
+      let height = width / 2;
+
+      if (height > availableHeight) {
+        height = availableHeight;
+        width = height * 2;
+      }
+
+      setCropSize({
+        width: Math.round(width),
+        height: Math.round(height),
+      });
+    };
+
+    updateCropSize();
+    window.addEventListener("resize", updateCropSize);
+    return () => window.removeEventListener("resize", updateCropSize);
+  }, [isOpen, imageDataUrl]);
 
   const onCropComplete = useCallback(
     (_croppedArea: Area, croppedAreaPixels: Area) => {
@@ -98,24 +146,38 @@ export function LogoEditorModal({
     <Modal isOpen={isOpen} onClose={onClose} title="Ajustar logo">
       <div className="space-y-4">
         <p className="text-sm text-zinc-600">
-          Arraste a imagem para posicionar e use o zoom. O quadrado é o que
+          Arraste a imagem para posicionar e use o zoom. O retângulo é o que
           aparecerá no PDF.
         </p>
 
         {imageDataUrl && (
-          <div className="relative h-[320px] w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100">
+          <div
+            ref={cropContainerRef}
+            className="relative h-[380px] w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100"
+          >
             <Cropper
               image={imageDataUrl}
               crop={crop}
               zoom={zoom}
-              aspect={1}
+              minZoom={minZoom}
+              aspect={2}
+              objectFit="contain"
+              restrictPosition={false}
+              cropSize={cropSize}
               cropShape="rect"
               showGrid
-              roundCropAreaPixels
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={onCropComplete}
               onCropAreaChange={onCropComplete}
+              onMediaLoaded={(mediaSize) => {
+                const fitByWidth = cropSize.width / mediaSize.naturalWidth;
+                const fitByHeight = cropSize.height / mediaSize.naturalHeight;
+                const fitZoom = Math.min(fitByWidth, fitByHeight);
+                const computedMinZoom = Math.max(0.1, Math.min(1, fitZoom));
+                setMinZoom(computedMinZoom);
+                setZoom(computedMinZoom);
+              }}
             />
           </div>
         )}
@@ -124,7 +186,7 @@ export function LogoEditorModal({
           <label className="text-sm font-medium text-zinc-700">Zoom</label>
           <input
             type="range"
-            min={1}
+            min={minZoom}
             max={3}
             step={0.1}
             value={zoom}

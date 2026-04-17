@@ -187,6 +187,9 @@ export default function DashboardLayout({
             <NavLink href="/my-budgets" collapsed={collapsed} icon="list">
               Meus orçamentos
             </NavLink>
+            <NavLink href="/budget-profile" collapsed={collapsed} icon="palette">
+              Perfil de orçamento
+            </NavLink>
             <NavLink href="/create-budget" collapsed={collapsed} icon="document">
               Novo orçamento
             </NavLink>
@@ -201,6 +204,9 @@ export default function DashboardLayout({
                 Administração
               </NavLink>
             )}
+            <NavLink href="/tutorial" collapsed={collapsed} icon="tutorial">
+              Tutorial
+            </NavLink>
           </nav>
           <div className="border-t border-white/20 p-3">
             <button
@@ -291,6 +297,13 @@ export default function DashboardLayout({
                   Novo orçamento
                 </MobileNavLink>
                 <MobileNavLink
+                  href="/budget-profile"
+                  icon="palette"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Perfil de orçamento
+                </MobileNavLink>
+                <MobileNavLink
                   href="/agendados"
                   icon="calendar"
                   onClick={() => setMobileMenuOpen(false)}
@@ -313,6 +326,13 @@ export default function DashboardLayout({
                     Administração
                   </MobileNavLink>
                 )}
+                <MobileNavLink
+                  href="/tutorial"
+                  icon="tutorial"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Tutorial
+                </MobileNavLink>
                 <div className="mt-4 pt-4 border-t border-white/20">
                   <button
                     type="button"
@@ -509,7 +529,7 @@ function MobileNavLink({
   href: string;
   children: React.ReactNode;
   onClick: () => void;
-  icon?: "dashboard" | "list" | "document" | "shield" | "calendar" | "user";
+  icon?: "dashboard" | "list" | "document" | "shield" | "calendar" | "user" | "palette" | "tutorial";
 }) {
   const pathname = usePathname();
   const { navigateWithSkeleton } = useSkeletonNavigation();
@@ -562,6 +582,20 @@ function MobileNavLink({
           <circle cx="12" cy="8" r="3.5" />
           <path d="M5 20v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1" strokeLinecap="round" />
         </svg>
+      ) : icon === "palette" ? (
+        <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 3a9 9 0 0 0-9 9c0 3.87 3.13 7 7 7h1.5a1.5 1.5 0 0 0 0-3H10a4 4 0 0 1-4-4 6 6 0 1 1 6 6h3a3 3 0 0 0 0-6h-1" />
+          <circle cx="7.5" cy="10.5" r="0.75" />
+          <circle cx="10.5" cy="7.5" r="0.75" />
+          <circle cx="14.5" cy="7.5" r="0.75" />
+        </svg>
+      ) : icon === "tutorial" ? (
+        <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17.5a.5.5 0 0 1-.8.4A5.9 5.9 0 0 0 15.5 20H6.5A2.5 2.5 0 0 1 4 17.5v-12Z" />
+          <path d="M8 7h8" />
+          <path d="M8 11h8" />
+          <path d="M8 15h5" />
+        </svg>
       ) : (
         <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2-2V7.5L14.5 2z" />
@@ -611,7 +645,7 @@ function NavLink({
   href: string;
   children: React.ReactNode;
   collapsed: boolean;
-  icon?: "dashboard" | "list" | "document" | "shield" | "calendar" | "user";
+  icon?: "dashboard" | "list" | "document" | "shield" | "calendar" | "user" | "palette" | "tutorial";
 }) {
   const pathname = usePathname();
   const { navigateWithSkeleton } = useSkeletonNavigation();
@@ -661,6 +695,20 @@ function NavLink({
         <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="8" r="3.5" />
           <path d="M5 20v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1" strokeLinecap="round" />
+        </svg>
+      ) : icon === "palette" ? (
+        <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 3a9 9 0 0 0-9 9c0 3.87 3.13 7 7 7h1.5a1.5 1.5 0 0 0 0-3H10a4 4 0 0 1-4-4 6 6 0 1 1 6 6h3a3 3 0 0 0 0-6h-1" />
+          <circle cx="7.5" cy="10.5" r="0.75" />
+          <circle cx="10.5" cy="7.5" r="0.75" />
+          <circle cx="14.5" cy="7.5" r="0.75" />
+        </svg>
+      ) : icon === "tutorial" ? (
+        <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17.5a.5.5 0 0 1-.8.4A5.9 5.9 0 0 0 15.5 20H6.5A2.5 2.5 0 0 1 4 17.5v-12Z" />
+          <path d="M8 7h8" />
+          <path d="M8 11h8" />
+          <path d="M8 15h5" />
         </svg>
       ) : (
         <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

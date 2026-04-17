@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { createBillingCheckout, type BillingMethod } from "@/services/billing";
+import { getBudgetProfile } from "@/services/account";
 import {
   createBudget,
   generatePdf,
@@ -374,6 +375,7 @@ export default function CreateBudgetPage() {
   const [freeUpgradeModalReason, setFreeUpgradeModalReason] = useState<
     "premium-template" | "creation-limit" | null
   >(null);
+  const profilePrefillAppliedRef = useRef(false);
   const canUsePremiumTemplates = plan === "PRO";
   const totalCalculado = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
@@ -537,6 +539,64 @@ export default function CreateBudgetPage() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!accessToken || profilePrefillAppliedRef.current) return;
+
+    let active = true;
+    profilePrefillAppliedRef.current = true;
+
+    void getBudgetProfile(accessToken)
+      .then((response) => {
+        if (!active || !response.profile) return;
+        const profile = response.profile;
+
+        if (profile.companyLogoUrl) {
+          setCompanyLogoUrl((prev) => (prev.trim() ? prev : profile.companyLogoUrl ?? ""));
+        }
+        if (profile.companyName) {
+          setCompanyName((prev) => (prev.trim() ? prev : profile.companyName ?? ""));
+        }
+        if (profile.companyAddress) {
+          setCompanyAddress((prev) => (prev.trim() ? prev : profile.companyAddress ?? ""));
+        }
+        if (profile.companyPhone) {
+          setCompanyPhone((prev) => (prev.trim() ? prev : profile.companyPhone ?? ""));
+        }
+        if (profile.companyCnpj) {
+          setCompanyCnpj((prev) => (prev.trim() ? prev : profile.companyCnpj ?? ""));
+        }
+        if (profile.validityDays != null && profile.validityDays > 0) {
+          setValidityDays((prev) => (prev === 15 ? profile.validityDays ?? prev : prev));
+        }
+        if (profile.fontColor) {
+          setPreviewFontColor((prev) => (prev === "#20b2aa" ? profile.fontColor ?? prev : prev));
+        }
+        if (profile.backgroundColor) {
+          setPreviewBgColor((prev) => (prev === "#e0f7fa" ? profile.backgroundColor ?? prev : prev));
+        }
+        if (profile.gridColor) {
+          setPreviewGridColor((prev) => (prev === "#20b2aa" ? profile.gridColor ?? prev : prev));
+        }
+
+        const profileTemplate = profile.templateId;
+        if (
+          profileTemplate &&
+          (profileTemplate === "simples" ||
+            profileTemplate === "moderno" ||
+            profileTemplate === "profissional")
+        ) {
+          setTemplateId((prev) => (prev === "simples" ? profileTemplate : prev));
+        }
+      })
+      .catch(() => {
+        // Falha no prefill não deve bloquear criação de orçamento.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessToken]);
 
   function addItem() {
     setItems((prev) => [...prev, { ...EMPTY_ITEM }]);
@@ -718,7 +778,10 @@ export default function CreateBudgetPage() {
       // Não resetamos loading aqui - deixa a animação rodando até navegar
     } catch (err) {
       const apiErr = err as ApiError;
-      if (apiErr.code === "FREE_PLAN_DAILY_LIMIT_REACHED") {
+      if (
+        apiErr.code === "FREE_PLAN_DAILY_LIMIT_REACHED" ||
+        apiErr.code === "FREE_PLAN_MONTHLY_LIMIT_REACHED"
+      ) {
         setFreeUpgradeModalReason("creation-limit");
         setShowFreeUpgradeModal(true);
         setLoading(false);
