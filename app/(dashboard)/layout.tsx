@@ -289,19 +289,19 @@ export default function DashboardLayout({
                 >
                   Meus orçamentos
                 </MobileNavLink>
-                <MobileNavLink 
-                  href="/create-budget" 
-                  icon="document"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Novo orçamento
-                </MobileNavLink>
                 <MobileNavLink
                   href="/budget-profile"
                   icon="palette"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Perfil de orçamento
+                </MobileNavLink>
+                <MobileNavLink 
+                  href="/create-budget" 
+                  icon="document"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Novo orçamento
                 </MobileNavLink>
                 <MobileNavLink
                   href="/agendados"

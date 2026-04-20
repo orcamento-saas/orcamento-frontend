@@ -334,7 +334,7 @@ function getTodayISO(): string {
 
 export default function CreateBudgetPage() {
   const router = useRouter();
-  const { accessToken, plan } = useAuth();
+  const { accessToken, plan, loading: authLoading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -375,7 +375,8 @@ export default function CreateBudgetPage() {
   const [freeUpgradeModalReason, setFreeUpgradeModalReason] = useState<
     "premium-template" | "creation-limit" | null
   >(null);
-  const profilePrefillAppliedRef = useRef(false);
+  /** Evita buscar layout/prévia com "simples" antes de aplicar o template salvo no perfil. */
+  const [budgetProfilePrefLoaded, setBudgetProfilePrefLoaded] = useState(false);
   const canUsePremiumTemplates = plan === "PRO";
   const totalCalculado = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
@@ -437,6 +438,7 @@ export default function CreateBudgetPage() {
 
   // Carrega o layout do orçamento sempre que o template selecionado mudar
   useEffect(() => {
+    if (!budgetProfilePrefLoaded) return;
     let cancelled = false;
     fetchBudgetLayout(templateId)
       .then((data) => {
@@ -448,10 +450,17 @@ export default function CreateBudgetPage() {
     return () => {
       cancelled = true;
     };
-  }, [templateId]);
+  }, [templateId, budgetProfilePrefLoaded]);
 
   useEffect(() => {
     if (!isBackendTemplate) {
+      setBackendPreviewHtml("");
+      setBackendPreviewLoading(false);
+      setBackendPreviewError(null);
+      return;
+    }
+
+    if (!budgetProfilePrefLoaded) {
       setBackendPreviewHtml("");
       setBackendPreviewLoading(false);
       setBackendPreviewError(null);
@@ -529,6 +538,7 @@ export default function CreateBudgetPage() {
     previewFontColor,
     previewBgColor,
     previewGridColor,
+    budgetProfilePrefLoaded,
   ]);
 
   // Simula carregamento inicial da página
@@ -541,10 +551,20 @@ export default function CreateBudgetPage() {
   }, []);
 
   useEffect(() => {
-    if (!accessToken || profilePrefillAppliedRef.current) return;
+    if (authLoading) {
+      return;
+    }
 
     let active = true;
-    profilePrefillAppliedRef.current = true;
+
+    if (!accessToken) {
+      setBudgetProfilePrefLoaded(true);
+      return () => {
+        active = false;
+      };
+    }
+
+    setBudgetProfilePrefLoaded(false);
 
     void getBudgetProfile(accessToken)
       .then((response) => {
@@ -581,22 +601,26 @@ export default function CreateBudgetPage() {
 
         const profileTemplate = profile.templateId;
         if (
-          profileTemplate &&
-          (profileTemplate === "simples" ||
-            profileTemplate === "moderno" ||
-            profileTemplate === "profissional")
+          profileTemplate === "simples" ||
+          profileTemplate === "moderno" ||
+          profileTemplate === "profissional"
         ) {
           setTemplateId((prev) => (prev === "simples" ? profileTemplate : prev));
         }
       })
       .catch(() => {
         // Falha no prefill não deve bloquear criação de orçamento.
+      })
+      .finally(() => {
+        if (active) {
+          setBudgetProfilePrefLoaded(true);
+        }
       });
 
     return () => {
       active = false;
     };
-  }, [accessToken]);
+  }, [authLoading, accessToken]);
 
   function addItem() {
     setItems((prev) => [...prev, { ...EMPTY_ITEM }]);
@@ -802,6 +826,18 @@ export default function CreateBudgetPage() {
     "w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1";
 
   function renderPreviewContent() {
+    if (!budgetProfilePrefLoaded) {
+      return (
+        <BackendTemplatePreview
+          html=""
+          loading
+          error={null}
+          title="Carregando template do perfil…"
+          minHeightClassName="min-h-[420px]"
+        />
+      );
+    }
+
     if (!layout) return null;
 
     if (isBackendTemplate) {

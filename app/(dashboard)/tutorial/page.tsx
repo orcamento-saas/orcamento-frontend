@@ -11,6 +11,8 @@ const TAB_ORDER: Array<{ rank: number; pattern: RegExp }> = [
   { rank: 4, pattern: /novo|create|criar|create-budget/i },
   { rank: 5, pattern: /agend|schedule/i },
   { rank: 6, pattern: /conta|account|perfil-usuario|usuario/i },
+  { rank: 7, pattern: /admin|administracao|administração/i },
+  { rank: 8, pattern: /tutorial|guia/i },
 ];
 
 type TutorialImage = {
@@ -27,8 +29,10 @@ function getFileOrder(fileName: string): number {
   return match?.rank ?? Number.MAX_SAFE_INTEGER;
 }
 
-async function getTutorialImages(): Promise<TutorialImage[]> {
-  const tutorialDirectory = path.join(process.cwd(), "public", "tutorial");
+async function getTutorialImagesFromPublicSubdir(
+  publicSubdir: string
+): Promise<TutorialImage[]> {
+  const tutorialDirectory = path.join(process.cwd(), "public", publicSubdir);
 
   try {
     const entries = await fs.readdir(tutorialDirectory, { withFileTypes: true });
@@ -43,7 +47,7 @@ async function getTutorialImages(): Promise<TutorialImage[]> {
         return a.localeCompare(b, "pt-BR", { numeric: true, sensitivity: "base" });
       })
       .map((fileName) => ({
-        src: `/tutorial/${encodeURIComponent(fileName)}`,
+        src: `/${publicSubdir}/${encodeURIComponent(fileName)}`,
         fileName,
       }));
   } catch {
@@ -52,11 +56,14 @@ async function getTutorialImages(): Promise<TutorialImage[]> {
 }
 
 export default async function TutorialPage() {
-  const images = await getTutorialImages();
+  const [images, mobileImages] = await Promise.all([
+    getTutorialImagesFromPublicSubdir("tutorial"),
+    getTutorialImagesFromPublicSubdir("tutorial_mobile"),
+  ]);
 
   return (
     <div className="h-full overflow-hidden py-1">
-      <TutorialGuide images={images} />
+      <TutorialGuide images={images} mobileImages={mobileImages} />
     </div>
   );
 }

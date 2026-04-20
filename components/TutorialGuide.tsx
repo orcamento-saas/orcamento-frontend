@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 
 type TutorialImage = {
   src: string;
@@ -9,6 +9,8 @@ type TutorialImage = {
 
 type TutorialGuideProps = {
   images: TutorialImage[];
+  /** Imagens para viewports abaixo do breakpoint `lg`; se vazio, usa só `images`. */
+  mobileImages?: TutorialImage[];
 };
 
 type TutorialTab = {
@@ -113,35 +115,70 @@ function buildTab(fileName: string): TutorialTab {
   };
 }
 
-export function TutorialGuide({ images }: TutorialGuideProps) {
+export function TutorialGuide({ images, mobileImages = [] }: TutorialGuideProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [useMobileGallery, setUseMobileGallery] = useState(false);
+
+  useLayoutEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const sync = () => {
+      setUseMobileGallery(mq.matches && mobileImages.length > 0);
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, [mobileImages.length]);
+
+  const activeImages = useMemo(() => {
+    const hasMobile = mobileImages.length > 0;
+    const hasDesktop = images.length > 0;
+
+    if (useMobileGallery && hasMobile) {
+      return mobileImages;
+    }
+    if (hasDesktop) {
+      return images;
+    }
+    if (hasMobile) {
+      return mobileImages;
+    }
+    return [];
+  }, [images, mobileImages, useMobileGallery]);
+
+  useEffect(() => {
+    setCurrentIndex((i) => {
+      if (activeImages.length === 0) return 0;
+      return Math.min(i, activeImages.length - 1);
+    });
+  }, [activeImages]);
 
   const goToPrevious = () => {
-    if (images.length === 0) return;
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+    if (activeImages.length === 0) return;
+    setCurrentIndex((prev) => (prev - 1 + activeImages.length) % activeImages.length);
   };
 
   const goToNext = () => {
-    if (images.length === 0) return;
-    setCurrentIndex((prev) => (prev + 1) % images.length);
+    if (activeImages.length === 0) return;
+    setCurrentIndex((prev) => (prev + 1) % activeImages.length);
   };
 
   const tabs = useMemo(
-    () => images.map((image) => buildTab(image.fileName)),
-    [images]
+    () => activeImages.map((image) => buildTab(image.fileName)),
+    [activeImages]
   );
 
-  if (images.length === 0) {
+  if (images.length === 0 && mobileImages.length === 0) {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-        Nenhuma imagem encontrada em <span className="font-semibold">public/tutorial</span>.
+        Nenhuma imagem encontrada em <span className="font-semibold">public/tutorial</span> nem em{" "}
+        <span className="font-semibold">public/tutorial_mobile</span>.
         <br />
-        Adicione os prints dos menus nessa pasta para montar o tutorial visual.
+        Adicione os prints das telas nessas pastas para montar o tutorial visual.
       </div>
     );
   }
 
-  const currentImage = images[currentIndex];
+  const currentImage = activeImages[currentIndex];
   const currentTab = tabs[currentIndex];
 
   return (
@@ -152,13 +189,13 @@ export function TutorialGuide({ images }: TutorialGuideProps) {
             <h2 className="text-lg font-semibold text-zinc-900 sm:text-xl">{currentTab.tabName}</h2>
           </div>
           <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600">
-            {currentIndex + 1} / {images.length}
+            {currentIndex + 1} / {activeImages.length}
           </span>
         </div>
 
         <p className="mb-2 text-sm leading-5 text-zinc-600">{currentTab.description}</p>
 
-        <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+        <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             key={currentImage.src}
@@ -166,26 +203,15 @@ export function TutorialGuide({ images }: TutorialGuideProps) {
             alt={`Tela da aba ${currentTab.tabName}`}
             className="h-full w-full object-contain transition duration-500 ease-out"
           />
-          <button
-            type="button"
-            onClick={goToNext}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/95 p-2 text-zinc-700 shadow-md transition hover:bg-white hover:text-teal-700"
-            aria-label="Ir para próxima aba"
-            title="Próxima aba"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="m9 18 6-6-6-6" />
-            </svg>
-          </button>
         </div>
 
-        <div className="mt-2 flex justify-center gap-3">
+        <div className="mt-2 flex gap-3 sm:mx-auto sm:max-w-md">
           <button
             type="button"
             onClick={goToPrevious}
-            className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-teal-700"
+            className="inline-flex min-h-[42px] flex-1 items-center justify-center gap-2 rounded-xl bg-teal-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-700"
           >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="m15 18-6-6 6-6" />
             </svg>
             Voltar
@@ -193,10 +219,10 @@ export function TutorialGuide({ images }: TutorialGuideProps) {
           <button
             type="button"
             onClick={goToNext}
-            className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-teal-700"
+            className="inline-flex min-h-[42px] flex-1 items-center justify-center gap-2 rounded-xl bg-teal-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-700"
           >
             Próxima
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="m9 18 6-6-6-6" />
             </svg>
           </button>
