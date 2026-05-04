@@ -16,6 +16,34 @@ import { Card } from "@/components/ui/Card";
 
 type Mode = "login" | "register" | "forgot";
 
+function GoogleIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-5 w-5"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M21.35 11.1h-9.18v2.98h5.27c-.23 1.49-1.12 2.75-2.38 3.6v2.99h3.86c2.26-2.08 3.56-5.14 3.56-8.79 0-.6-.05-1.19-.13-1.78Z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12.17 22.5c3.23 0 5.93-1.07 7.91-2.89l-3.86-2.99c-1.07.72-2.43 1.14-4.05 1.14-3.12 0-5.77-2.1-6.71-4.92H1.47v3.08c1.97 3.92 6.04 6.58 10.7 6.58Z"
+        fill="#34A853"
+      />
+      <path
+        d="M5.46 12.84a7.17 7.17 0 0 1 0-4.58V5.18H1.47a10.33 10.33 0 0 0 0 9.74l3.99-3.08Z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12.17 7.24c1.76 0 3.33.61 4.57 1.8l3.43-3.43C18.09 3.65 15.39 2.5 12.17 2.5c-4.66 0-8.73 2.66-10.7 6.58l3.99 3.08c.94-2.82 3.59-4.92 6.71-4.92Z"
+        fill="#EA4335"
+      />
+    </svg>
+  );
+}
+
 function EyeIcon() {
   return (
     <svg
@@ -111,6 +139,7 @@ export function AuthLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const pdfFeatures = [
@@ -296,6 +325,31 @@ export function AuthLoginPage() {
     }
   }
 
+  async function handleGoogleAuth() {
+    setError(null);
+    setSuccess(null);
+    setLoadingGoogle(true);
+    try {
+      const callbackUrl = new URL("/auth/callback", window.location.origin);
+      if (nextDest) {
+        callbackUrl.searchParams.set("next", nextDest);
+      }
+
+      const { error: err } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: callbackUrl.toString(),
+        },
+      });
+
+      if (err) {
+        setError(err.message);
+      }
+    } finally {
+      setLoadingGoogle(false);
+    }
+  }
+
   const isLogin = mode === "login";
   const isForgot = mode === "forgot";
   const isRegister = mode === "register";
@@ -471,6 +525,30 @@ export function AuthLoginPage() {
             }
             className="space-y-4"
           >
+            {(isLogin || isRegister) && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleGoogleAuth();
+                  }}
+                  disabled={loading || loadingGoogle}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-2.5 px-4 font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <GoogleIcon />
+                  <span>{loadingGoogle ? "Redirecionando..." : "Continuar com Google"}</span>
+                </button>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gray-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-gray-500">ou</span>
+                  </div>
+                </div>
+              </>
+            )}
+
             {isRegister && (
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -615,7 +693,7 @@ export function AuthLoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || loadingGoogle}
               className="w-full bg-teal-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading

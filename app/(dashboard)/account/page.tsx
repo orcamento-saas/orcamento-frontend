@@ -274,7 +274,7 @@ export default function AccountPage() {
               value={phone}
               onChange={(e) => setPhone(formatPhoneBr(e.target.value))}
               required
-              placeholder="(11) 98765-4321"
+              placeholder="(99) 99999-9999"
               className={inputClass}
             />
           </div>
