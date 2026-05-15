@@ -53,7 +53,24 @@ function buildPeriod(preset: RangePreset, customStart: string, customEnd: string
   return { start: parsedStart, end: parsedEnd };
 }
 
-function SummaryCard({ title, value, tone }: { title: string; value: number; tone: "teal" | "amber" | "emerald" }) {
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+}
+
+function SummaryCard({
+  title,
+  value,
+  amount,
+  tone,
+}: {
+  title: string;
+  value: number;
+  amount: number;
+  tone: "teal" | "amber" | "emerald";
+}) {
   const toneClass =
     tone === "teal"
       ? "bg-cyan-500"
@@ -64,7 +81,12 @@ function SummaryCard({ title, value, tone }: { title: string; value: number; ton
   return (
     <div className={`rounded-lg sm:rounded-3xl ${toneClass} p-1.5 sm:p-4 min-h-[72px] sm:min-h-0 text-white shadow-md shadow-zinc-200/70`}>
       <p className="text-[9px] leading-tight sm:text-sm font-medium text-white/90">{title}</p>
-      <p className="mt-0.5 text-sm leading-none sm:mt-1.5 sm:text-2xl font-bold tracking-tight">{value}</p>
+      <div className="mt-0.5 flex items-baseline justify-between gap-1 sm:mt-1.5">
+        <p className="text-sm leading-none sm:text-2xl font-bold tracking-tight">{value}</p>
+        <p className="text-[9px] leading-tight sm:text-sm font-semibold text-white/95 tabular-nums">
+          {formatCurrency(amount)}
+        </p>
+      </div>
     </div>
   );
 }
@@ -214,7 +236,15 @@ export default function DashboardPage() {
   const { accessToken, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [summary, setSummary] = useState({ budgets: 0, created: 0, signed: 0, concluded: 0 });
+  const [summary, setSummary] = useState({
+    budgets: 0,
+    created: 0,
+    signed: 0,
+    concluded: 0,
+    createdValue: 0,
+    signedValue: 0,
+    concludedValue: 0,
+  });
 
   const [preset, setPreset] = useState<RangePreset>("today");
   const today = new Date();
@@ -410,9 +440,9 @@ export default function DashboardPage() {
       {error && <Card className="border-red-200 bg-red-50 text-sm text-red-700">{error}</Card>}
 
       <div className="grid grid-cols-3 gap-2 md:gap-2.5">
-        <SummaryCard title="Criados" value={summary.created} tone="teal" />
-        <SummaryCard title="Assinados" value={summary.signed} tone="amber" />
-        <SummaryCard title="Concluídos" value={summary.concluded} tone="emerald" />
+        <SummaryCard title="Criados" value={summary.created} amount={summary.createdValue} tone="teal" />
+        <SummaryCard title="Assinados" value={summary.signed} amount={summary.signedValue} tone="amber" />
+        <SummaryCard title="Concluídos" value={summary.concluded} amount={summary.concludedValue} tone="emerald" />
       </div>
 
       <Card className="rounded-3xl border-zinc-200 bg-white p-2.5 sm:p-3 min-h-[320px]">

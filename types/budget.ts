@@ -161,4 +161,7 @@ export interface DashboardSummaryResponse {
   created: number;
   signed: number;
   concluded: number;
+  createdValue: number;
+  signedValue: number;
+  concludedValue: number;
 }

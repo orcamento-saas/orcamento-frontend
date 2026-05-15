@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { createBillingCheckout, type BillingMethod } from "@/services/billing";
@@ -12,7 +12,6 @@ import {
 } from "@/services/budgets";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { BackendTemplatePreview } from "@/components/BackendTemplatePreview";
 import { LogoEditorModal } from "@/components/LogoEditorModal";
@@ -28,6 +27,12 @@ import {
   type BudgetLayoutConfig,
   fetchBudgetLayout,
 } from "@/lib/budgetLayouts";
+import {
+  MEASURE_OPTIONS,
+  getMeasureConfig,
+  parseMeasureQuantity,
+  type MeasureType,
+} from "@/lib/budgetMeasure";
 
 const EMPTY_ITEM: BudgetItem = {
   description: "",
@@ -253,6 +258,23 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function FormSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="box-border w-full max-w-none rounded-xl border-2 border-teal-600 bg-white p-4 shadow-sm">
+      <h3 className="mb-4 border-b border-teal-600/25 pb-2 text-sm font-semibold text-teal-900">
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
 function isValidUrl(str: string): boolean {
   try {
     new URL(str);
@@ -351,6 +373,8 @@ export default function CreateBudgetPage() {
   const [validityDays, setValidityDays] = useState<number>(15);
   const [observation, setObservation] = useState("");
   const [items, setItems] = useState<BudgetItem[]>([{ ...EMPTY_ITEM }]);
+  const [measureType, setMeasureType] = useState<MeasureType>("UN");
+  const measureConfig = getMeasureConfig(measureType);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
@@ -975,8 +999,10 @@ export default function CreateBudgetPage() {
             {loading ? (
               <GeneratingBudgetLoading />
             ) : (
-              <Card className="h-fit bg-teal-50">
-                <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="w-full min-w-0">
+                <form onSubmit={handleSubmit} className="flex w-full min-w-0 flex-col gap-4">
+                <FormSection title="Informações gerais">
+                <div className="space-y-4">
                 <Input
                 label="Título"
                 value={title}
@@ -997,7 +1023,11 @@ export default function CreateBudgetPage() {
                   placeholder="Detalhes do serviço ou escopo"
                 />
               </div>
+                </div>
+                </FormSection>
 
+                <FormSection title="Logo e identidade">
+              <div className="space-y-4">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                   Logo da empresa (opcional)
@@ -1089,11 +1119,10 @@ export default function CreateBudgetPage() {
                 maxLength={previewLimits.companyName}
                 placeholder="Sua empresa"
               />
+              </div>
+              </FormSection>
 
-              <div>
-                <h3 className="mb-3 text-sm font-semibold text-zinc-800">
-                  Dados do cliente
-                </h3>
+              <FormSection title="Dados do cliente">
                 <div className="space-y-3">
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-zinc-700">
@@ -1149,12 +1178,25 @@ export default function CreateBudgetPage() {
                     placeholder="Endereço completo do cliente"
                   />
                 </div>
-              </div>
+              </FormSection>
 
-              <div>
-                <h3 className="mb-3 text-sm font-semibold text-zinc-800">
-                  Dados do serviço
-                </h3>
+              <FormSection title="Dados do serviço">
+                <div className="mb-4 max-w-xs">
+                  <label className="mb-1 block text-xs font-medium text-zinc-600">
+                    Tipo de medida
+                  </label>
+                  <select
+                    value={measureType}
+                    onChange={(e) => setMeasureType(e.target.value as MeasureType)}
+                    className={`${inputBase} py-2`}
+                  >
+                    {MEASURE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="space-y-4">
                   {items.map((item, i) => (
                     <div key={i} className="border border-zinc-200 rounded-lg p-4">
@@ -1179,18 +1221,18 @@ export default function CreateBudgetPage() {
                         <div className="grid grid-cols-[80px_1fr] gap-3 mb-3">
                           <div>
                             <label className="block text-xs font-medium text-zinc-600 mb-1">
-                              Qtd
+                              {measureConfig.quantityLabel}
                             </label>
                             <input
                               type="number"
                               min={0}
-                              step={1}
+                              step={measureConfig.quantityStep}
                               value={item.quantity || ""}
                               onChange={(e) =>
                                 updateItem(
                                   i,
                                   "quantity",
-                                  parseInt(e.target.value, 10) || 0
+                                  parseMeasureQuantity(e.target.value, measureType)
                                 )
                               }
                               className={`${inputBase} py-2`}
@@ -1198,7 +1240,7 @@ export default function CreateBudgetPage() {
                           </div>
                           <div>
                             <label className="block text-xs font-medium text-zinc-600 mb-1">
-                              Valor un.
+                              {measureConfig.unitPriceLabel}
                             </label>
                             <input
                               type="number"
@@ -1250,9 +1292,8 @@ export default function CreateBudgetPage() {
                 >
                   + Adicionar mais itens
                 </button>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-6">
+              <div className="mt-4 flex flex-wrap items-center gap-6">
                 <div className="w-32">
                   <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                     Validade (dias)
@@ -1295,11 +1336,9 @@ export default function CreateBudgetPage() {
                   placeholder="Observações adicionais"
                 />
               </div>
+              </FormSection>
 
-              <div>
-                <h3 className="mb-3 text-sm font-semibold text-zinc-800">
-                  Dados da empresa
-                </h3>
+              <FormSection title="Dados da empresa">
                 <div className="space-y-3">
                   <Input
                     label="Endereço"
@@ -1327,7 +1366,7 @@ export default function CreateBudgetPage() {
                     placeholder="00.000.000/0000-00"
                   />
                 </div>
-              </div>
+              </FormSection>
 
               {error && (
                 <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
@@ -1348,9 +1387,9 @@ export default function CreateBudgetPage() {
                 </Button>
               </div>
             </form>
-          </Card>
+              </div>
             )}
-        </div>
+          </div>
         )}
 
         {/* Prévia - mobile */}
@@ -1372,8 +1411,10 @@ export default function CreateBudgetPage() {
         {loading ? (
           <GeneratingBudgetLoading />
         ) : (
-          <Card className="shrink-0 bg-teal-50">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="w-full min-w-0 shrink-0">
+            <form onSubmit={handleSubmit} className="flex w-full min-w-0 flex-col gap-4">
+            <FormSection title="Informações gerais">
+            <div className="space-y-4">
             <Input
             label="Título"
             value={title}
@@ -1394,7 +1435,11 @@ export default function CreateBudgetPage() {
               placeholder="Detalhes do serviço ou escopo"
             />
           </div>
+            </div>
+            </FormSection>
 
+          <FormSection title="Logo e identidade">
+          <div className="space-y-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-zinc-700">
               Logo da empresa (opcional)
@@ -1486,11 +1531,10 @@ export default function CreateBudgetPage() {
             maxLength={previewLimits.companyName}
             placeholder="Sua empresa"
           />
+          </div>
+          </FormSection>
 
-          <div>
-            <h3 className="mb-3 text-sm font-semibold text-zinc-800">
-              Dados do cliente
-            </h3>
+          <FormSection title="Dados do cliente">
             <div className="space-y-3">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-zinc-700">
@@ -1546,12 +1590,25 @@ export default function CreateBudgetPage() {
                 placeholder="Endereço completo do cliente"
               />
             </div>
-          </div>
+          </FormSection>
 
-          <div>
-            <h3 className="mb-3 text-sm font-semibold text-zinc-800">
-              Dados do serviço
-            </h3>
+          <FormSection title="Dados do serviço">
+            <div className="mb-4 max-w-xs">
+              <label className="mb-1 block text-xs font-medium text-zinc-600">
+                Tipo de medida
+              </label>
+              <select
+                value={measureType}
+                onChange={(e) => setMeasureType(e.target.value as MeasureType)}
+                className={`${inputBase} py-2`}
+              >
+                {MEASURE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="space-y-4">
               {items.map((item, i) => (
                 <div key={i} className="border border-zinc-200 rounded-lg p-4">
@@ -1576,18 +1633,18 @@ export default function CreateBudgetPage() {
                     <div className="grid grid-cols-[80px_120px_170px] gap-3">
                       <div>
                         <label className="block text-xs font-medium text-zinc-600 mb-1">
-                          Qtd
+                          {measureConfig.quantityLabel}
                         </label>
                         <input
                           type="number"
                           min={0}
-                          step={1}
+                          step={measureConfig.quantityStep}
                           value={item.quantity || ""}
                           onChange={(e) =>
                             updateItem(
                               i,
                               "quantity",
-                              parseInt(e.target.value, 10) || 0
+                              parseMeasureQuantity(e.target.value, measureType)
                             )
                           }
                           className={`${inputBase} py-2`}
@@ -1595,7 +1652,7 @@ export default function CreateBudgetPage() {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-zinc-600 mb-1">
-                          Valor un.
+                          {measureConfig.unitPriceLabel}
                         </label>
                         <input
                           type="number"
@@ -1645,9 +1702,8 @@ export default function CreateBudgetPage() {
             >
               + Adicionar mais itens
             </button>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-6">
+          <div className="mt-4 flex flex-wrap items-center gap-6">
             <div className="w-32">
               <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                 Validade (dias)
@@ -1690,11 +1746,9 @@ export default function CreateBudgetPage() {
               placeholder="Observações adicionais"
             />
           </div>
+          </FormSection>
 
-          <div>
-            <h3 className="mb-3 text-sm font-semibold text-zinc-800">
-              Dados da empresa
-            </h3>
+          <FormSection title="Dados da empresa">
             <div className="space-y-3">
               <Input
                 label="Endereço"
@@ -1722,7 +1776,7 @@ export default function CreateBudgetPage() {
                 placeholder="00.000.000/0000-00"
               />
             </div>
-          </div>
+          </FormSection>
 
           {error && (
             <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
@@ -1743,7 +1797,7 @@ export default function CreateBudgetPage() {
             </Button>
           </div>
         </form>
-        </Card>
+          </div>
         )}
         </div>
       </div>

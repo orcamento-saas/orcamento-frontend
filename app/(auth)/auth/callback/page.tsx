@@ -126,7 +126,7 @@ export default function AuthCallbackPage() {
           <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm">
             <h1 className="text-lg font-semibold text-zinc-900">Confirmando sua conta...</h1>
             <p className="mt-2 text-sm text-zinc-600">
-              Aguarde, voce sera redirecionado para o login.
+              Aguarde, você será redirecionado para o login.
             </p>
           </div>
         </div>
