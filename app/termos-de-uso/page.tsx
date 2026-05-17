@@ -120,10 +120,10 @@ export default function TermosDeUsoPage() {
       <p className="mt-2">
         E-mail:{" "}
         <a
-          href="mailto:luizmarcellolm@gmail.com"
+          href="mailto:contato.orcamentoslm@gmail.com"
           className="text-teal-700 underline-offset-2 hover:text-teal-800 hover:underline"
         >
-          luizmarcellolm@gmail.com
+          contato.orcamentoslm@gmail.com
         </a>
       </p>
       <p className="mt-2">
