@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AdminGuard } from "@/components/AdminGuard";
+import { AdminDoubtsTab } from "@/components/admin/AdminDoubtsTab";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -24,7 +25,7 @@ import type {
 
 type PlanFilter = "ALL" | UserPlan;
 type StatusFilter = "ALL" | "ACTIVE" | "SUSPENDED";
-type AdminTab = "users" | "events";
+type AdminTab = "users" | "events" | "doubts";
 type EventTypeFilter = "ALL" | SystemEventType;
 type EventSeverityFilter = "ALL" | SystemEventSeverity;
 
@@ -499,8 +500,18 @@ export default function AdminPage() {
             >
               Eventos
             </button>
+            <button
+              type="button"
+              className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "doubts" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+              }`}
+              onClick={() => setActiveTab("doubts")}
+            >
+              Dúvidas usuários
+            </button>
           </div>
 
+          {activeTab !== "doubts" && (
           <section className="grid w-full grid-cols-2 gap-3 md:flex-1 md:grid-cols-2 xl:grid-cols-4">
             {activeTab === "users" ? (
               <>
@@ -518,8 +529,25 @@ export default function AdminPage() {
               </>
             )}
           </section>
+          )}
         </div>
 
+        {activeTab === "doubts" ? (
+          <div className="flex flex-col gap-3">
+            {feedback && (
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm ${
+                  feedback.tone === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-red-200 bg-red-50 text-red-700"
+                }`}
+              >
+                {feedback.message}
+              </div>
+            )}
+            <AdminDoubtsTab accessToken={accessToken} onFeedback={setFeedback} />
+          </div>
+        ) : (
         <Card className="rounded-[2rem] border-zinc-200 p-0 shadow-lg shadow-zinc-200/60">
           <CardHeader className="mb-0 border-b border-zinc-200 px-6 py-5">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -806,7 +834,7 @@ export default function AdminPage() {
             </div>
           </div>
         </Card>
-      </div>
+        )}
 
       <Modal
         isOpen={actionModal !== null}
@@ -851,6 +879,7 @@ export default function AdminPage() {
           </div>
         )}
       </Modal>
+      </div>
     </AdminGuard>
   );
 }
