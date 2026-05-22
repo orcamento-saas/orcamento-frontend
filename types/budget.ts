@@ -67,6 +67,9 @@ export interface PublicBudgetView {
   signedPdfUrl: string | null;
   createdAt: string;
   documentDate?: string | null;
+  companyLogoUrl?: string | null;
+  companyName?: string | null;
+  ownerName?: string | null;
   clientName?: string | null;
   fontColor?: string | null;
   backgroundColor?: string | null;

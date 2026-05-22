@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { BudgetScheduleModal } from "@/components/BudgetScheduleModal";
 import type { BudgetScheduleTarget } from "@/components/BudgetScheduleModal";
 import { ShareBudget } from "@/components/ShareBudget";
+import { getBudgetProfile } from "@/services/account";
 import { useAuth } from "@/hooks/useAuth";
 import { getBudgetCards, updateBudgetExecuted } from "@/services/budgets";
 import type { BudgetCard } from "@/types/budget";
@@ -190,18 +191,41 @@ const IconCompartilhar = () => (
   </svg>
 );
 
+type ShareBudgetTarget = Pick<
+  BudgetCard,
+  "id" | "title" | "value" | "clientName"
+>;
+
 export default function AgendadosPage() {
-  const { accessToken } = useAuth();
+  const { accessToken, account } = useAuth();
   const [budgets, setBudgets] = useState<BudgetCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingExecutedId, setUpdatingExecutedId] = useState<string | null>(null);
-  const [shareBudgetId, setShareBudgetId] = useState<string | null>(null);
+  const [shareTarget, setShareTarget] = useState<ShareBudgetTarget | null>(null);
+  const [profileCompanyName, setProfileCompanyName] = useState<string | null>(null);
 
   const [preset, setPreset] = useState<RangePreset>("today");
   const today = new Date();
   const [customStart, setCustomStart] = useState(toDateInputValue(today));
   const [customEnd, setCustomEnd] = useState(toDateInputValue(today));
+
+  useEffect(() => {
+    if (!accessToken) return;
+    let active = true;
+    void getBudgetProfile(accessToken)
+      .then(({ profile }) => {
+        if (active) {
+          setProfileCompanyName(profile?.companyName?.trim() || null);
+        }
+      })
+      .catch(() => {
+        if (active) setProfileCompanyName(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [accessToken]);
 
   /** Nos presets rápidos, espelha data inicial/final nos campos de personalização (mobile). */
   useEffect(() => {
@@ -684,7 +708,14 @@ export default function AgendadosPage() {
                                 type="button"
                                 className={`${btnBase} ${btnBlue}`}
                                 title="Compartilhar orçamento para assinatura"
-                                onClick={() => setShareBudgetId(b.id)}
+                                onClick={() =>
+                                  setShareTarget({
+                                    id: b.id,
+                                    title: b.title,
+                                    value: b.value,
+                                    clientName: b.clientName,
+                                  })
+                                }
                               >
                                 <IconCompartilhar />
                               </button>
@@ -875,7 +906,7 @@ export default function AgendadosPage() {
         }}
       />
 
-      {shareBudgetId && (
+      {shareTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-4 sm:p-5">
             <div className="mb-3 flex items-center justify-between">
@@ -884,7 +915,7 @@ export default function AgendadosPage() {
               </h2>
               <button
                 type="button"
-                onClick={() => setShareBudgetId(null)}
+                onClick={() => setShareTarget(null)}
                 className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
                 aria-label="Fechar"
               >
@@ -892,8 +923,14 @@ export default function AgendadosPage() {
               </button>
             </div>
             <ShareBudget
-              budgetId={shareBudgetId}
-              onClose={() => setShareBudgetId(null)}
+              key={shareTarget.id}
+              budgetId={shareTarget.id}
+              title={shareTarget.title}
+              value={shareTarget.value}
+              clientName={shareTarget.clientName}
+              companyName={profileCompanyName}
+              senderName={account?.name}
+              onClose={() => setShareTarget(null)}
             />
           </div>
         </div>

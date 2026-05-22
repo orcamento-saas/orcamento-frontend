@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { ShareBudget } from "@/components/ShareBudget";
+import { getBudgetProfile } from "@/services/account";
 import { MyBudgetsSkeleton } from "@/components/Skeleton";
 import { BudgetScheduleModal } from "@/components/BudgetScheduleModal";
 import { formatScheduleDisplay } from "@/lib/budgetSchedule";
@@ -125,8 +126,13 @@ const IconExcluir = () => (
   <svg className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
 );
 
+type ShareBudgetTarget = Pick<
+  BudgetCard,
+  "id" | "title" | "value" | "clientName"
+>;
+
 export default function MyBudgetsPage() {
-  const { accessToken } = useAuth();
+  const { accessToken, account } = useAuth();
   const [budgets, setBudgets] = useState<BudgetCard[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -137,10 +143,28 @@ export default function MyBudgetsPage() {
   const [signedFilter, setSignedFilter] = useState<"all" | "signed" | "unsigned" | "concluded">("all");
   const [updatingExecutedId, setUpdatingExecutedId] = useState<string | null>(null);
   const [scheduleTarget, setScheduleTarget] = useState<BudgetCard | null>(null);
-  const [shareBudgetId, setShareBudgetId] = useState<string | null>(null);
+  const [shareTarget, setShareTarget] = useState<ShareBudgetTarget | null>(null);
+  const [profileCompanyName, setProfileCompanyName] = useState<string | null>(null);
 
   // Debounce search para reduzir requests
   const debouncedSearch = useDebounce(search, 500);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    let active = true;
+    void getBudgetProfile(accessToken)
+      .then(({ profile }) => {
+        if (active) {
+          setProfileCompanyName(profile?.companyName?.trim() || null);
+        }
+      })
+      .catch(() => {
+        if (active) setProfileCompanyName(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [accessToken]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -321,7 +345,14 @@ export default function MyBudgetsPage() {
                             type="button"
                             className={`${btnBase} ${btnBlue}`}
                             title="Compartilhar orçamento para assinatura"
-                            onClick={() => setShareBudgetId(b.id)}
+                            onClick={() =>
+                              setShareTarget({
+                                id: b.id,
+                                title: b.title,
+                                value: b.value,
+                                clientName: b.clientName,
+                              })
+                            }
                           >
                             <IconCompartilhar />
                           </button>
@@ -489,14 +520,20 @@ export default function MyBudgetsPage() {
       </Modal>
 
       <Modal
-        isOpen={shareBudgetId !== null}
-        onClose={() => setShareBudgetId(null)}
+        isOpen={shareTarget !== null}
+        onClose={() => setShareTarget(null)}
         title="Compartilhar orçamento para assinatura"
       >
-        {shareBudgetId && (
+        {shareTarget && (
           <ShareBudget
-            budgetId={shareBudgetId}
-            onClose={() => setShareBudgetId(null)}
+            key={shareTarget.id}
+            budgetId={shareTarget.id}
+            title={shareTarget.title}
+            value={shareTarget.value}
+            clientName={shareTarget.clientName}
+            companyName={profileCompanyName}
+            senderName={account?.name}
+            onClose={() => setShareTarget(null)}
           />
         )}
       </Modal>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getPublicBudget, signBudget } from "@/services/budgets";
 import type { PublicBudgetView } from "@/types/budget";
+import { resolveBudgetShareSenderLabel } from "@/lib/budgetShare";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
@@ -64,6 +65,10 @@ function getDisplayDate(budget: PublicBudgetView): string {
     });
   }
   return formatDateShort(budget.createdAt);
+}
+
+function getIssuerDisplayName(budget: PublicBudgetView): string {
+  return resolveBudgetShareSenderLabel(budget.companyName, budget.ownerName);
 }
 
 export default function PublicBudgetPage() {
@@ -160,67 +165,88 @@ export default function PublicBudgetPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-white to-primary-50/20">
       <div className="mx-auto max-w-lg px-3 py-2 sm:px-4">
-        <Card className="mb-3 py-3 px-4 bg-teal-50">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={budget.status} />
+        <Card className="mb-3 bg-teal-50 py-3 px-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1 pr-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusBadge status={budget.status} />
+              </div>
+              <p className="mt-2 text-sm font-semibold text-zinc-900 sm:text-base">
+                {getIssuerDisplayName(budget)}
+              </p>
+              <p className="mt-1 text-sm font-medium text-zinc-800 sm:text-base">
+                {budget.title?.trim() || "Orçamento"}
+              </p>
+              <p className="mt-1 text-xs text-zinc-700 sm:text-sm">
+                {budget.clientName?.trim() || "—"}
+              </p>
+              <p className="mt-1 text-xs text-zinc-700 sm:text-sm">
+                Total {formatCurrency(budget.value)}
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-600 sm:text-sm">
+                {getDisplayDate(budget)}
+              </p>
+              {!signed && budget.pdfUrl && (
+                <div className="mt-2">
+                  <a
+                    href={budget.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block"
+                  >
+                    <Button
+                      size="sm"
+                      className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm"
+                    >
+                      Ver orçamento
+                    </Button>
+                  </a>
+                </div>
+              )}
+              {budget.signedPdfUrl && (
+                <div className="mt-2">
+                  <a
+                    href={budget.signedPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block"
+                  >
+                    <Button
+                      size="sm"
+                      className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm"
+                    >
+                      Abrir PDF assinado
+                    </Button>
+                  </a>
+                </div>
+              )}
+            </div>
+            {budget.companyLogoUrl?.trim() ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={budget.companyLogoUrl.trim()}
+                alt={`Logo ${getIssuerDisplayName(budget)}`}
+                className="h-20 w-auto max-w-[8.5rem] shrink-0 object-contain sm:h-28 sm:max-w-[12.5rem]"
+              />
+            ) : null}
           </div>
-          <p className="mt-2 font-semibold text-zinc-900 text-sm">
-            {budget.clientName ?? "—"}
-          </p>
-          <p className="mt-1 text-base font-medium text-zinc-800">
-            {budget.title}
-          </p>
-          <p className="mt-1 text-xs text-zinc-700">
-            Total {formatCurrency(budget.value)} - {getDisplayDate(budget)}
-          </p>
-          {!signed && budget.pdfUrl && (
-            <div className="mt-2">
-              <a
-                href={budget.pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block"
-              >
-                <Button
-                  size="sm"
-                  className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm"
-                >
-                  Ver orçamento
-                </Button>
-              </a>
-            </div>
-          )}
-          {budget.signedPdfUrl && (
-            <div className="mt-2">
-              <a
-                href={budget.signedPdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block"
-              >
-                <Button size="sm" className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-green-800 shadow-sm">
-                  Abrir PDF assinado
-                </Button>
-              </a>
-            </div>
-          )}
         </Card>
 
         {signed ? (
           <Card className="border-emerald-200 bg-teal-50 py-3 px-4">
-            <h2 className="text-base font-semibold text-emerald-900">
+            <h2 className="text-sm font-semibold text-emerald-900 sm:text-base">
               Assinatura enviada
             </h2>
-            <p className="mt-1 text-sm text-emerald-800">
+            <p className="mt-1 text-xs text-emerald-800 sm:text-sm">
               O orçamento foi assinado com sucesso. Obrigado!
             </p>
           </Card>
         ) : (
           <Card className="py-3 px-4">
-            <h2 className="text-base font-semibold text-zinc-900">
+            <h2 className="text-sm font-semibold text-zinc-900 sm:text-base">
               Assinar orçamento
             </h2>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-[11px] text-zinc-500 sm:text-xs">
               Preencha os dados e desenhe sua assinatura abaixo.
             </p>
             <form onSubmit={handleSubmit} className="mt-3 space-y-2">

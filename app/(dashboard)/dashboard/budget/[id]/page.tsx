@@ -50,7 +50,7 @@ export default function DashboardBudgetPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const { accessToken } = useAuth();
+  const { accessToken, account } = useAuth();
   const [budget, setBudget] = useState<Budget | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -275,7 +275,16 @@ export default function DashboardBudgetPage() {
         onClose={() => setShareOpen(false)}
         title="Compartilhar orçamento"
       >
-        <ShareBudget budgetId={budget.id} onClose={() => setShareOpen(false)} />
+        <ShareBudget
+          key={budget.id}
+          budgetId={budget.id}
+          title={budget.title}
+          value={budget.value}
+          clientName={budget.clientName}
+          companyName={budget.companyName}
+          senderName={account?.name}
+          onClose={() => setShareOpen(false)}
+        />
       </Modal>
 
       <Modal
