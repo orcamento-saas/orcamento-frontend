@@ -11,6 +11,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Orçamentos LM",
   description: "Orçamentos profissionais com PDF e assinatura digital",
+  icons: {
+    icon: "/plan/icone.png",
+    shortcut: "/plan/icone.png",
+    apple: "/plan/icone.png",
+  },
 };
 
 export default function RootLayout({
