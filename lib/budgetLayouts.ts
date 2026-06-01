@@ -82,6 +82,10 @@ export interface BudgetLayoutConfig {
   footerLineGap: number;
   /** Fonte principal (Google Fonts ou system) */
   fontFamily: string;
+  /** Largura máxima de cada linha do bloco cliente no PDF (px). */
+  clientInfoLineMaxWidthPx: number;
+  /** Tamanho da fonte das linhas do cliente no PDF (px). */
+  clientInfoFontSizePx: number;
 }
 
 const DEFAULT_LAYOUT_ID: LayoutId = "simples";

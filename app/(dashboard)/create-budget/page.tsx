@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, type ReactNode } from "react";
+import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { createBillingCheckout, type BillingMethod } from "@/services/billing";
@@ -33,6 +33,11 @@ import {
   parseMeasureQuantity,
   type MeasureType,
 } from "@/lib/budgetMeasure";
+import {
+  clampClientFieldToPdfLine,
+  ensureInterFontForPdfMeasure,
+  type ClientPdfLineField,
+} from "@/lib/clientPdfLineMeasure";
 
 const EMPTY_ITEM: BudgetItem = {
   description: "",
@@ -42,9 +47,6 @@ const EMPTY_ITEM: BudgetItem = {
 
 type PreviewLimitedField =
   | "companyName"
-  | "clientName"
-  | "clientEmail"
-  | "clientAddress"
   | "companyAddress"
   | "itemDescription"
   | "observation";
@@ -52,27 +54,18 @@ type PreviewLimitedField =
 const PREVIEW_FIELD_LIMITS: Record<LayoutId, Record<PreviewLimitedField, number>> = {
   simples: {
     companyName: 45,
-    clientName: 38,
-    clientEmail: 42,
-    clientAddress: 46,
     companyAddress: 46,
     itemDescription: 56,
     observation: 260,
   },
   moderno: {
     companyName: 34,
-    clientName: 30,
-    clientEmail: 34,
-    clientAddress: 38,
     companyAddress: 34,
     itemDescription: 42,
     observation: 170,
   },
   profissional: {
     companyName: 34,
-    clientName: 30,
-    clientEmail: 34,
-    clientAddress: 38,
     companyAddress: 34,
     itemDescription: 42,
     observation: 170,
@@ -411,6 +404,23 @@ export default function CreateBudgetPage() {
     templateId === "moderno" || templateId === "profissional" || templateId === "simples";
   const previewLimits = PREVIEW_FIELD_LIMITS[templateId];
   const observationMaxLines = OBSERVATION_MAX_LINES;
+
+  useEffect(() => {
+    void ensureInterFontForPdfMeasure();
+  }, []);
+
+  const clampClientField = useCallback(
+    (field: ClientPdfLineField, value: string) =>
+      clampClientFieldToPdfLine(field, value, templateId, layout),
+    [templateId, layout]
+  );
+
+  useEffect(() => {
+    setClientName((v) => clampClientField("clientName", v));
+    setClientEmail((v) => clampClientField("clientEmail", v));
+    setClientPhone((v) => clampClientField("clientPhone", v));
+    setClientAddress((v) => clampClientField("clientAddress", v));
+  }, [templateId, layout, clampClientField]);
 
   // Arrays de cores para os dropdowns
   const fontColors = [
@@ -1139,11 +1149,8 @@ export default function CreateBudgetPage() {
                     label="Nome"
                     value={clientName}
                     onChange={(e) =>
-                      setClientName(
-                        clampTextToLimit(e.target.value, previewLimits.clientName)
-                      )
+                      setClientName(clampClientField("clientName", e.target.value))
                     }
-                    maxLength={previewLimits.clientName}
                     placeholder="Nome do cliente"
                     required
                   />
@@ -1152,17 +1159,18 @@ export default function CreateBudgetPage() {
                     type="email"
                     value={clientEmail}
                     onChange={(e) =>
-                      setClientEmail(
-                        clampTextToLimit(e.target.value, previewLimits.clientEmail)
-                      )
+                      setClientEmail(clampClientField("clientEmail", e.target.value))
                     }
-                    maxLength={previewLimits.clientEmail}
                     placeholder="cliente@email.com"
                   />
                   <Input
                     label="Telefone"
                     value={clientPhone}
-                    onChange={(e) => setClientPhone(formatPhone(e.target.value))}
+                    onChange={(e) =>
+                      setClientPhone(
+                        clampClientField("clientPhone", formatPhone(e.target.value))
+                      )
+                    }
                     maxLength={15}
                     placeholder="(00) 00000-0000"
                   />
@@ -1171,10 +1179,9 @@ export default function CreateBudgetPage() {
                     value={clientAddress}
                     onChange={(e) =>
                       setClientAddress(
-                        clampTextToLimit(e.target.value, previewLimits.clientAddress)
+                        clampClientField("clientAddress", e.target.value)
                       )
                     }
-                    maxLength={previewLimits.clientAddress}
                     placeholder="Endereço completo do cliente"
                   />
                 </div>
@@ -1547,52 +1554,49 @@ export default function CreateBudgetPage() {
                   className={`${inputBase} bg-zinc-50 cursor-not-allowed`}
                 />
               </div>
-              <Input
-                label="Nome"
-                value={clientName}
-                onChange={(e) =>
-                  setClientName(
-                    clampTextToLimit(e.target.value, previewLimits.clientName)
-                  )
-                }
-                maxLength={previewLimits.clientName}
-                placeholder="Nome do cliente"
-                required
-              />
-              <Input
-                label="E-mail"
-                type="email"
-                value={clientEmail}
-                onChange={(e) =>
-                  setClientEmail(
-                    clampTextToLimit(e.target.value, previewLimits.clientEmail)
-                  )
-                }
-                maxLength={previewLimits.clientEmail}
-                placeholder="cliente@email.com"
-              />
-              <Input
-                label="Telefone"
-                value={clientPhone}
-                onChange={(e) => setClientPhone(formatPhone(e.target.value))}
-                maxLength={15}
-                placeholder="(00) 00000-0000"
-              />
-              <Input
-                label="Endereço do cliente"
-                value={clientAddress}
-                onChange={(e) =>
-                  setClientAddress(
-                    clampTextToLimit(e.target.value, previewLimits.clientAddress)
-                  )
-                }
-                maxLength={previewLimits.clientAddress}
-                placeholder="Endereço completo do cliente"
-              />
-            </div>
-          </FormSection>
+            <Input
+              label="Nome"
+              value={clientName}
+              onChange={(e) =>
+                setClientName(clampClientField("clientName", e.target.value))
+              }
+              placeholder="Nome do cliente"
+              required
+            />
+            <Input
+              label="E-mail"
+              type="email"
+              value={clientEmail}
+              onChange={(e) =>
+                setClientEmail(clampClientField("clientEmail", e.target.value))
+              }
+              placeholder="cliente@email.com"
+            />
+            <Input
+              label="Telefone"
+              value={clientPhone}
+              onChange={(e) =>
+                setClientPhone(
+                  clampClientField("clientPhone", formatPhone(e.target.value))
+                )
+              }
+              maxLength={15}
+              placeholder="(00) 00000-0000"
+            />
+            <Input
+              label="Endereço do cliente"
+              value={clientAddress}
+              onChange={(e) =>
+                setClientAddress(
+                  clampClientField("clientAddress", e.target.value)
+                )
+              }
+              placeholder="Endereço completo do cliente"
+            />
+                </div>
+              </FormSection>
 
-          <FormSection title="Dados do serviço">
+              <FormSection title="Dados do serviço">
             <div className="mb-4 max-w-xs">
               <label className="mb-1 block text-xs font-medium text-zinc-600">
                 Tipo de medida
