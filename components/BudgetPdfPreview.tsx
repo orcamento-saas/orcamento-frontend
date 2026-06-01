@@ -182,18 +182,15 @@ export function BudgetPdfPreview({
                 onError={() => setLogoError(true)}
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">
-                Logo
-              </div>
+              <div className="h-full w-full bg-transparent" aria-hidden />
             )}
           </div>
         ) : (
           <div
-            className="flex shrink-0 items-center justify-center border border-dashed border-zinc-300 bg-zinc-50 text-center text-xs italic text-zinc-400"
-            style={{ width: layout.logoWidth, height: layout.logoHeight, borderRadius: layout.logoBorderRadius }}
-          >
-            Logo da empresa
-          </div>
+            className="shrink-0"
+            style={{ width: layout.logoWidth, height: layout.logoHeight }}
+            aria-hidden
+          />
         )}
       </div>
 
