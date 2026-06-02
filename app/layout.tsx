@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { GoogleAdsTag } from "@/components/GoogleAdsTag";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
@@ -26,6 +27,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${inter.variable} ${inter.className} overflow-x-hidden font-sans antialiased`}>
+        <GoogleAdsTag />
         <Providers>{children}</Providers>
       </body>
     </html>

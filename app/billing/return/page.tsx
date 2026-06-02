@@ -9,6 +9,7 @@ import {
   type BillingSubscriptionSummary,
 } from "@/services/billing";
 import { formatDateBr } from "@/lib/formatDateBr";
+import { trackGoogleAdsPurchase } from "@/lib/googleAds";
 
 type UrlCheckoutOutcome = "cancelled" | "expired" | "success" | "unknown";
 
@@ -126,6 +127,17 @@ function BillingReturnContent() {
       clearPollTimers();
     };
   }, [accessToken, urlOutcome]);
+
+  useEffect(() => {
+    if (displayMode !== "paid" || !billing?.subscription) return;
+
+    const transactionId =
+      billing.subscription.asaasSubscriptionId?.trim() ||
+      billing.subscription.id.trim();
+    if (!transactionId) return;
+
+    trackGoogleAdsPurchase({ transactionId });
+  }, [displayMode, billing?.subscription]);
 
   const isPro = billing?.plan === "PRO";
   const periodEnd = billing?.subscription?.currentPeriodEnd ?? billing?.subscription?.paidUntil ?? null;
