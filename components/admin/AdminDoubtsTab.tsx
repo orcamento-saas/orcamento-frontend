@@ -455,7 +455,7 @@ export function AdminDoubtsTab({
       <CardHeader className="mb-0 border-b border-zinc-200 px-6 py-5">
         <div className="flex flex-col gap-4">
           <div>
-            <CardTitle>Dúvidas usuários</CardTitle>
+            <CardTitle>Dúvidas</CardTitle>
             <p className="mt-1 text-sm text-zinc-500">
               Mensagens enviadas pelo ícone de ajuda na plataforma.
             </p>

@@ -4,7 +4,13 @@ import { useCallback, useRef, useState, type FC } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLandingTraffic } from "@/hooks/useLandingTraffic";
 import { buildLoginUrl, PLANS_POST_AUTH_PATH } from "@/lib/authRedirect";
+import {
+  trackLandingClickStartFree,
+  trackLandingTabFeatures,
+  trackLandingTabPlans,
+} from "@/lib/trafficAnalytics";
 
 type TabId = "features" | "plans";
 
@@ -130,6 +136,7 @@ const features: {
 ];
 
 export function LandingPage() {
+  useLandingTraffic();
   const router = useRouter();
   const mainSectionsRef = useRef<HTMLElement>(null);
   const [activeTab, setActiveTab] = useState<TabId>("features");
@@ -137,12 +144,28 @@ export function LandingPage() {
   const [leadEmail, setLeadEmail] = useState("");
   const [leadHint, setLeadHint] = useState<string | null>(null);
 
-  /** Troca aba e rola até o bloco principal (header é sticky — precisa de scroll explícito). */
-  const goToTabFromNav = useCallback((tab: TabId) => {
+  const selectTab = useCallback((tab: TabId) => {
+    if (tab === "plans") {
+      trackLandingTabPlans();
+    } else {
+      trackLandingTabFeatures();
+    }
     setActiveTab(tab);
-    requestAnimationFrame(() => {
-      mainSectionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+  }, []);
+
+  /** Troca aba e rola até o bloco principal (header é sticky — precisa de scroll explícito). */
+  const goToTabFromNav = useCallback(
+    (tab: TabId) => {
+      selectTab(tab);
+      requestAnimationFrame(() => {
+        mainSectionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    },
+    [selectTab]
+  );
+
+  const onStartFreeClick = useCallback(() => {
+    trackLandingClickStartFree();
   }, []);
 
   const goRegister = useCallback(() => {
@@ -161,6 +184,7 @@ export function LandingPage() {
       return;
     }
     setLeadHint(null);
+    trackLandingClickStartFree();
     goRegister();
   };
 
@@ -215,6 +239,7 @@ export function LandingPage() {
             </Link>
             <Link
               href={buildLoginUrl({ mode: "register", next: PLANS_POST_AUTH_PATH })}
+              onClick={onStartFreeClick}
               className="inline-flex items-center rounded-xl bg-teal-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
             >
               Começar grátis
@@ -349,7 +374,7 @@ export function LandingPage() {
           <div className="hidden h-10 items-center rounded-xl bg-zinc-100 p-1 sm:flex">
             <button
               type="button"
-              onClick={() => setActiveTab("features")}
+              onClick={() => selectTab("features")}
               className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
                 activeTab === "features" ? "bg-white text-teal-800 shadow-sm" : "text-zinc-600"
               }`}
@@ -358,7 +383,7 @@ export function LandingPage() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("plans")}
+              onClick={() => selectTab("plans")}
               className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
                 activeTab === "plans" ? "bg-white text-teal-800 shadow-sm" : "text-zinc-600"
               }`}
@@ -446,6 +471,7 @@ export function LandingPage() {
               <div className="mt-auto">
                 <Link
                   href={buildLoginUrl({ mode: "register", next: PLANS_POST_AUTH_PATH })}
+                  onClick={onStartFreeClick}
                   className="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 sm:text-sm"
                 >
                   Começar grátis
@@ -531,6 +557,7 @@ export function LandingPage() {
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href={buildLoginUrl({ mode: "register", next: PLANS_POST_AUTH_PATH })}
+              onClick={onStartFreeClick}
               className="inline-flex w-full max-w-xs items-center justify-center rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 sm:w-auto"
             >
               Criar conta

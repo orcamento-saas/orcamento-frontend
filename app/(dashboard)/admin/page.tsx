@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AdminGuard } from "@/components/AdminGuard";
 import { AdminDoubtsTab } from "@/components/admin/AdminDoubtsTab";
+import { AdminTrafficTab } from "@/components/admin/AdminTrafficTab";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -25,7 +26,7 @@ import type {
 
 type PlanFilter = "ALL" | UserPlan;
 type StatusFilter = "ALL" | "ACTIVE" | "SUSPENDED";
-type AdminTab = "users" | "events" | "doubts";
+type AdminTab = "users" | "events" | "doubts" | "traffic";
 type EventTypeFilter = "ALL" | SystemEventType;
 type EventSeverityFilter = "ALL" | SystemEventSeverity;
 
@@ -507,11 +508,20 @@ export default function AdminPage() {
               }`}
               onClick={() => setActiveTab("doubts")}
             >
-              Dúvidas usuários
+              Dúvidas
+            </button>
+            <button
+              type="button"
+              className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "traffic" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+              }`}
+              onClick={() => setActiveTab("traffic")}
+            >
+              Tráfego
             </button>
           </div>
 
-          {activeTab !== "doubts" && (
+          {activeTab !== "doubts" && activeTab !== "traffic" && (
           <section className="grid w-full grid-cols-2 gap-3 md:flex-1 md:grid-cols-2 xl:grid-cols-4">
             {activeTab === "users" ? (
               <>
@@ -532,7 +542,9 @@ export default function AdminPage() {
           )}
         </div>
 
-        {activeTab === "doubts" ? (
+        {activeTab === "traffic" ? (
+          <AdminTrafficTab accessToken={accessToken} />
+        ) : activeTab === "doubts" ? (
           <div className="flex flex-col gap-3">
             {feedback && (
               <div
