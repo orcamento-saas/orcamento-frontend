@@ -119,4 +119,4 @@ npm run dev
 
 **Luiz Marcelo Mota** · Desenvolvedor | Automação e Integração de Sistemas
 
-[LinkedIn](COLOQUE AQUI O LINK) · [GitHub](https://github.com/luizmarcelolm)
+[LinkedIn](https://www.linkedin.com/in/luizmarcelomota/) · [GitHub](https://github.com/luizmarcelolm)
