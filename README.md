@@ -2,7 +2,7 @@
 
 **SaaS para criar, enviar e acompanhar orçamentos profissionais em poucos minutos.**
 
-🔗 **Acesse:** [https://www.orcamentoslm.com.br/]
+🔗 **Acesse:** [orcamentoslm.com.br](https://www.orcamentoslm.com.br/)
 
 > 🇺🇸 *SaaS for small service businesses to create, send and track professional quotes, with digital signature, PDF generation and recurring billing (Pix and credit card).*
 
@@ -59,7 +59,7 @@ Uma plataforma web onde o profissional monta o orçamento com a própria marca, 
 | Pagamentos | Asaas (Pix e cartão, assinatura recorrente) |
 | Comunicação com a API | API REST própria (fetch) |
 | Hospedagem | Vercel |
-| Backend | [COLOQUE AQUI: ex. Node.js + Express + PostgreSQL] (repositório privado) |
+| Backend | API REST própria (repositório privado) |
 
 ---
 
@@ -79,15 +79,6 @@ Asaas (cobrança Pix / cartão)
 ```
 
 O frontend cuida da interface, autenticação e geração de pré-visualizações. Regras de negócio, geração de PDF, assinaturas e cobrança ficam na API.
-
----
-
-## 📸 Telas
-
-<!-- Tire prints e arraste para cá no editor do GitHub -->
-| Painel | Criação de orçamento | Assinatura do cliente |
-|---|---|---|
-| [print] | [print] | [print] |
 
 ---
 
